@@ -1070,9 +1070,9 @@ function callClaude(messages,_attempt){
   var sys=buildSystemPrompt();
   var useLocal=localStorage.getItem('useLocalLlm')==='1';
   var apiKey=localStorage.getItem('groqApiKey')||localStorage.getItem('geminiApiKey')||localStorage.getItem('claudeApiKey')||'';
-  if(!apiKey){
+  if(!apiKey&&!useLocal){
     thinkEl.remove();thinkEl=null;
-    appendAIMsg('⚙️ กรุณาตั้งค่า API Key ก่อน (กดปุ่ม ⚙️)','bot','err');
+    appendAIMsg('⚙️ กรุณาตั้งค่า API Key ก่อน หรือเปิดโหมด Qwen (Local) — กดปุ่ม ⚙️','bot','err');
     aiThinking=false;document.getElementById('aiSend').disabled=false;
     toggleAICfg();return;
   }
