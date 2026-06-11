@@ -515,12 +515,12 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
         <span style="font-size:11px;color:var(--ai);">ใช้ Local</span>
       </label>
     </div>
-    <input class="ai-cfg-inp" id="aiLocalUrl" placeholder="http://localhost:11434" value="http://localhost:11434">
+    <input class="ai-cfg-inp" id="aiLocalUrl" placeholder="คอม: http://localhost:11434 · มือถือ: auto" value="http://localhost:11434">
     <input class="ai-cfg-inp" id="aiLocalModel" placeholder="qwen2.5:7b  (ชื่อโมเดลที่ ollama list)" value="qwen2.5:7b">
     <button class="ai-cfg-save" onclick="saveLocalLlm()">บันทึก Local LLM</button>
     <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.8;">
-      ต้องเปิด Ollama ค้างไว้ และตั้งค่า CORS ให้เว็บนี้เรียกได้:<br>
-      <code style="color:var(--accent);">setx OLLAMA_ORIGINS "*"</code> แล้วรีสตาร์ท Ollama
+      🖥️ <b>บนคอมเครื่องที่รัน Ollama:</b> ใส่ <code style="color:var(--accent);">http://localhost:11434</code><br>
+      📱 <b>บนมือถือ:</b> ใส่คำว่า <code style="color:var(--accent);">auto</code> (ดึง URL จาก tunnel อัตโนมัติ) แล้วเปิดสคริปต์ <code style="color:var(--accent);">start-qwen.bat</code> ค้างไว้ที่คอม
     </div>
   </div>
 </div>
@@ -1019,6 +1019,20 @@ function saveLocalLlm(){
   var btn=event&&event.target&&event.target.tagName==='BUTTON'?event.target:document.querySelector('#aiCfg .ai-cfg-save:last-of-type');
   if(btn){var orig=btn.textContent;btn.textContent=on?'✅ เปิดใช้ Qwen แล้ว!':'✅ บันทึกแล้ว (ปิด Local)';btn.style.background='#34d058';setTimeout(function(){btn.textContent=orig;btn.style.background='';},2000);}
 }
+// path บน Supabase Storage ที่คอมจะอัปโหลด tunnel URL ปัจจุบันไว้ (สำหรับมือถือ)
+var OLLAMA_URL_FILE=SUPA_URL+'/storage/v1/object/public/'+BUCKET+'/config/ollama-url.txt';
+// คืนค่า URL ของ Qwen: ถ้าตั้งเป็น URL ตรงๆ ใช้เลย; ถ้าว่าง/เป็น "auto" → ดึง tunnel URL ล่าสุดจาก Supabase
+function resolveLocalUrl(){
+  var u=(localStorage.getItem('ollamaUrl')||'').trim().replace(/\/+$/,'');
+  if(u && u.toLowerCase()!=='auto'){return Promise.resolve(u);}
+  return fetch(OLLAMA_URL_FILE+'?t='+Date.now(),{cache:'no-store'})
+    .then(function(r){if(!r.ok)throw new Error('ยังไม่มี URL บนเซิร์ฟเวอร์ (คอมยังไม่ได้เปิด tunnel?)');return r.text();})
+    .then(function(t){
+      var url=(t||'').trim().replace(/\/+$/,'');
+      if(!/^https?:\/\//.test(url))throw new Error('URL ที่ดึงมาไม่ถูกต้อง: '+url);
+      return url;
+    });
+}
 function toggleAICfg(){
   aiCfgOpen=!aiCfgOpen;
   document.getElementById('aiCfg').className='ai-cfg'+(aiCfgOpen?' open':'');
@@ -1103,9 +1117,10 @@ function callClaude(messages,_attempt){
   }
   if(useLocal){
     // ── Qwen / Ollama (Local LLM, OpenAI-compatible) ──
-    var lUrl=(localStorage.getItem('ollamaUrl')||'http://localhost:11434').replace(/\/+$/,'');
     var lModel=localStorage.getItem('ollamaModel')||'qwen2.5:7b';
     var localMsgs=[{role:'system',content:sys}].concat(messages);
+    // resolveLocalUrl: ถ้า URL ว่าง/เป็น "auto" → ดึง tunnel URL ปัจจุบันจาก Supabase (สำหรับมือถือ)
+    resolveLocalUrl().then(function(lUrl){
     fetch(lUrl+'/v1/chat/completions',{
       method:'POST',headers:{'content-type':'application/json'},
       body:JSON.stringify({model:lModel,messages:localMsgs,max_tokens:1024,temperature:0.7,stream:false})
@@ -1121,6 +1136,9 @@ function callClaude(messages,_attempt){
     })
     .catch(function(e){
       onFatalError('เชื่อมต่อ Qwen (Ollama) ไม่ได้: '+e.message+' — ตรวจสอบว่า Ollama เปิดอยู่ที่ '+lUrl+' และตั้ง OLLAMA_ORIGINS="*" แล้ว');
+    });
+    }).catch(function(e){
+      onFatalError(e.message||'ดึง URL ของ Qwen ไม่ได้');
     });
   } else if(apiKey.indexOf('gsk_')===0){
     // ── Groq API ──
