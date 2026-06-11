@@ -516,7 +516,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
       </label>
     </div>
     <input class="ai-cfg-inp" id="aiLocalUrl" placeholder="http://localhost:11434" value="http://localhost:11434">
-    <input class="ai-cfg-inp" id="aiLocalModel" placeholder="qwen2.5  (ชื่อโมเดลที่ ollama list)" value="qwen2.5">
+    <input class="ai-cfg-inp" id="aiLocalModel" placeholder="qwen2.5:7b  (ชื่อโมเดลที่ ollama list)" value="qwen2.5:7b">
     <button class="ai-cfg-save" onclick="saveLocalLlm()">บันทึก Local LLM</button>
     <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.8;">
       ต้องเปิด Ollama ค้างไว้ และตั้งค่า CORS ให้เว็บนี้เรียกได้:<br>
@@ -1011,7 +1011,7 @@ function saveAIKey(){
 }
 function saveLocalLlm(){
   var url=document.getElementById('aiLocalUrl').value.trim().replace(/\/+$/,'')||'http://localhost:11434';
-  var model=document.getElementById('aiLocalModel').value.trim()||'qwen2.5';
+  var model=document.getElementById('aiLocalModel').value.trim()||'qwen2.5:7b';
   var on=document.getElementById('aiLocalToggle').checked;
   localStorage.setItem('ollamaUrl',url);
   localStorage.setItem('ollamaModel',model);
@@ -1028,7 +1028,7 @@ function toggleAICfg(){
     document.getElementById('aiKeyInp').value=k;
     // แสดงค่า Local LLM ที่บันทึกไว้
     document.getElementById('aiLocalUrl').value=localStorage.getItem('ollamaUrl')||'http://localhost:11434';
-    document.getElementById('aiLocalModel').value=localStorage.getItem('ollamaModel')||'qwen2.5';
+    document.getElementById('aiLocalModel').value=localStorage.getItem('ollamaModel')||'qwen2.5:7b';
     document.getElementById('aiLocalToggle').checked=localStorage.getItem('useLocalLlm')==='1';
   }
 }
@@ -1104,7 +1104,7 @@ function callClaude(messages,_attempt){
   if(useLocal){
     // ── Qwen / Ollama (Local LLM, OpenAI-compatible) ──
     var lUrl=(localStorage.getItem('ollamaUrl')||'http://localhost:11434').replace(/\/+$/,'');
-    var lModel=localStorage.getItem('ollamaModel')||'qwen2.5';
+    var lModel=localStorage.getItem('ollamaModel')||'qwen2.5:7b';
     var localMsgs=[{role:'system',content:sys}].concat(messages);
     fetch(lUrl+'/v1/chat/completions',{
       method:'POST',headers:{'content-type':'application/json'},
