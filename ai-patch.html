@@ -1,0 +1,352 @@
+<!--
+  ════════════════════════════════════════════════════════
+  AI PATCH — วิธีติดตั้ง:
+  1. เพิ่ม CSS ด้านล่างนี้ ก่อน </style>
+  2. เพิ่ม HTML ก่อน </body>
+  3. เพิ่ม JS ก่อน </script> ปิดตัวสุดท้าย
+  ════════════════════════════════════════════════════════
+-->
+
+<!-- ══════ 1. CSS — วางก่อน </style> ══════ -->
+<style id="AI_CSS_PATCH">
+/* ══ AI ASSISTANT PANEL ══ */
+[data-theme="dark"]{--ai:#a855f7;--ai2:rgba(168,85,247,0.15);--ai3:rgba(168,85,247,0.35);}
+[data-theme="light"]{--ai:#7c3aed;--ai2:rgba(124,58,237,0.10);--ai3:rgba(124,58,237,0.3);}
+
+.ai-fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:var(--ai);border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 4px 20px rgba(168,85,247,0.5);z-index:8000;transition:all .25s;display:flex;align-items:center;justify-content:center;}
+.ai-fab:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(168,85,247,0.7);}
+.ai-fab.open{background:var(--red);}
+
+.ai-panel{position:fixed;bottom:90px;right:16px;width:380px;max-width:calc(100vw - 32px);background:var(--panel);border:1px solid var(--ai3);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.4);z-index:7999;display:none;flex-direction:column;max-height:72vh;overflow:hidden;transition:all .25s;}
+.ai-panel.open{display:flex;}
+
+.ai-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,var(--ai2),transparent);flex-shrink:0;}
+.ai-hdr-left{display:flex;align-items:center;gap:10px;}
+.ai-hdr-icon{font-size:20px;}
+.ai-hdr-title{font-size:14px;font-weight:700;color:var(--ai);}
+.ai-hdr-sub{font-size:11px;color:var(--text3);}
+.ai-cfg-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px;}
+.ai-cfg-btn:hover{color:var(--ai);}
+
+/* Quick actions */
+.ai-quick{display:flex;gap:6px;padding:10px 12px;flex-wrap:wrap;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ai-q{background:var(--ai2);border:1px solid var(--ai3);color:var(--ai);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'Sarabun',sans-serif;}
+.ai-q:hover{background:var(--ai);color:#fff;}
+
+/* Messages */
+.ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;}
+.ai-msg{max-width:92%;line-height:1.6;font-size:14px;word-break:break-word;}
+.ai-msg.user{align-self:flex-end;background:var(--ai);color:#fff;padding:9px 14px;border-radius:16px 16px 4px 16px;}
+.ai-msg.bot{align-self:flex-start;background:var(--bg2);color:var(--text);padding:9px 14px;border-radius:16px 16px 16px 4px;border:1px solid var(--border);}
+.ai-msg.bot.typing{color:var(--text3);font-style:italic;}
+.ai-msg.bot.err{border-color:var(--red);color:var(--red);}
+
+/* Task preview card inside chat */
+.ai-task-preview{background:var(--panel2);border:1px solid var(--ai3);border-radius:10px;padding:12px 14px;margin-top:8px;font-size:13px;}
+.ai-task-preview .tp-title{font-weight:700;color:var(--text);margin-bottom:6px;}
+.ai-task-preview .tp-row{color:var(--text2);margin-bottom:3px;}
+.ai-task-preview .tp-row strong{color:var(--accent);}
+.ai-add-btn{margin-top:10px;background:var(--green);border:none;color:#fff;font-size:13px;font-weight:700;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;width:100%;}
+.ai-add-btn:hover{opacity:.88;}
+
+/* Input row */
+.ai-inp-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0;}
+.ai-inp{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:24px;padding:9px 16px;color:var(--text);font-family:'Sarabun',sans-serif;font-size:14px;outline:none;transition:border .2s;}
+.ai-inp:focus{border-color:var(--ai);}
+.ai-inp::placeholder{color:var(--text3);}
+.ai-send{background:var(--ai);border:none;color:#fff;width:38px;height:38px;border-radius:50%;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.ai-send:hover{opacity:.88;}
+.ai-send:disabled{opacity:.4;cursor:not-allowed;}
+
+/* API Key config */
+.ai-cfg{display:none;padding:14px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg2);}
+.ai-cfg.open{display:block;}
+.ai-cfg-label{font-size:12px;color:var(--text3);margin-bottom:6px;}
+.ai-cfg-inp{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;font-family:monospace;outline:none;margin-bottom:8px;}
+.ai-cfg-inp:focus{border-color:var(--ai);}
+.ai-cfg-save{background:var(--ai);border:none;color:#fff;font-size:13px;font-weight:600;padding:7px 18px;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;}
+
+@media(max-width:440px){.ai-panel{width:calc(100vw - 16px);right:8px;}}
+</style>
+
+<!-- ══════ 2. HTML — วางก่อน </body> ══════ -->
+<!-- AI Floating Button -->
+<button class="ai-fab" id="aiFab" onclick="toggleAI()" title="AI ผู้ช่วย Claude">🤖</button>
+
+<!-- AI Panel -->
+<div class="ai-panel" id="aiPanel">
+  <div class="ai-hdr">
+    <div class="ai-hdr-left">
+      <span class="ai-hdr-icon">🤖</span>
+      <div>
+        <div class="ai-hdr-title">Claude AI Assistant</div>
+        <div class="ai-hdr-sub">สสอ.เขาค้อ — วิเคราะห์ / สรุป / เพิ่มงาน</div>
+      </div>
+    </div>
+    <button class="ai-cfg-btn" onclick="toggleAICfg()" title="ตั้งค่า API Key">⚙️</button>
+  </div>
+
+  <div class="ai-quick">
+    <button class="ai-q" onclick="aiQuick('summary')">📊 สรุปงานวันนี้</button>
+    <button class="ai-q" onclick="aiQuick('analyze')">🔍 วิเคราะห์ภาระงาน</button>
+    <button class="ai-q" onclick="aiQuick('urgent')">🚨 งานเร่งด่วน</button>
+    <button class="ai-q" onclick="aiQuick('add')">➕ เพิ่มงานด้วย AI</button>
+  </div>
+
+  <div class="ai-msgs" id="aiMsgs">
+    <div class="ai-msg bot">สวัสดีครับ! ผมคือ Claude AI ผู้ช่วยของ สสอ.เขาค้อ 🏥<br><br>สามารถถามผมได้เลยครับ เช่น<br>• "สรุปงานที่ค้างอยู่ทั้งหมด"<br>• "เพิ่มงานประชุม KPI วันศุกร์นี้ ด่วน"<br>• "วิเคราะห์ว่ากลุ่มงานไหนมีภาระมากสุด"</div>
+  </div>
+
+  <div class="ai-inp-row">
+    <input class="ai-inp" id="aiInp" placeholder="พิมพ์คำถาม หรือสั่งเพิ่มงาน..." />
+    <button class="ai-send" id="aiSend" onclick="sendAI()">➤</button>
+  </div>
+
+  <div class="ai-cfg" id="aiCfg">
+    <div class="ai-cfg-label">🔑 Claude API Key (เก็บใน localStorage เท่านั้น)</div>
+    <input class="ai-cfg-inp" id="aiKeyInp" type="password" placeholder="sk-ant-api03-..." />
+    <button class="ai-cfg-save" onclick="saveAIKey()">บันทึก API Key</button>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px;">หรือเพิ่ม CLAUDE_API_KEY ใน GAS Script Properties เพื่อความปลอดภัย</div>
+  </div>
+</div>
+
+<!-- ══════ 3. JS — วางก่อน </script> ปิดตัวสุดท้าย ══════ -->
+<script id="AI_JS_PATCH">
+// ════════ AI ASSISTANT ════════
+var aiOpen=false, aiCfgOpen=false, aiThinking=false;
+var aiConversation=[]; // full chat history
+
+function toggleAI(){
+  aiOpen=!aiOpen;
+  document.getElementById('aiPanel').className='ai-panel'+(aiOpen?' open':'');
+  document.getElementById('aiFab').className='ai-fab'+(aiOpen?' open':'');
+  document.getElementById('aiFab').textContent=aiOpen?'✕':'🤖';
+}
+function toggleAICfg(){
+  aiCfgOpen=!aiCfgOpen;
+  document.getElementById('aiCfg').className='ai-cfg'+(aiCfgOpen?' open':'');
+  if(aiCfgOpen){
+    var k=localStorage.getItem('claudeApiKey')||'';
+    document.getElementById('aiKeyInp').value=k;
+  }
+}
+function saveAIKey(){
+  var k=document.getElementById('aiKeyInp').value.trim();
+  if(k){localStorage.setItem('claudeApiKey',k);alert('บันทึก API Key แล้ว!');}
+  toggleAICfg();
+}
+
+// ── Quick prompts ──
+function aiQuick(type){
+  var prompts={
+    summary:'สรุปงานทั้งหมดที่กำลังดำเนินการอยู่ในปัจจุบัน แยกตามกลุ่มงาน และระบุว่างานไหนเร่งด่วนที่สุด',
+    analyze:'วิเคราะห์ภาระงานของ สสอ.เขาค้อ ว่ากลุ่มงานไหนมีงานค้างมากที่สุด และมีข้อเสนอแนะอะไรบ้าง',
+    urgent:'แสดงรายการงานที่เร่งด่วน เกินกำหนด หรือครบกำหนดภายใน 3 วัน พร้อมคำแนะนำวิธีจัดการ',
+    add:'ช่วยเพิ่มงานให้หน่อย — กรุณาบอกชื่องาน กลุ่มงาน และกำหนดส่ง'
+  };
+  document.getElementById('aiInp').value=prompts[type]||'';
+  document.getElementById('aiInp').focus();
+  if(type!=='add') sendAI();
+}
+
+// ── Send message ──
+function sendAI(){
+  var inp=document.getElementById('aiInp');
+  var txt=inp.value.trim();
+  if(!txt||aiThinking)return;
+  inp.value='';
+  appendAIMsg(txt,'user');
+  aiConversation.push({role:'user',content:txt});
+  callClaude(aiConversation);
+}
+
+function appendAIMsg(txt,role,extra){
+  var box=document.getElementById('aiMsgs');
+  var d=document.createElement('div');
+  d.className='ai-msg '+role+(extra?' '+extra:'');
+  d.innerHTML=txt.replace(/\n/g,'<br>');
+  box.appendChild(d);
+  box.scrollTop=box.scrollHeight;
+  return d;
+}
+
+// ── Call Claude API ──
+function callClaude(messages){
+  aiThinking=true;
+  document.getElementById('aiSend').disabled=true;
+  var thinkingEl=appendAIMsg('⏳ กำลังคิด...','bot','typing');
+
+  var systemPrompt=buildSystemPrompt();
+
+  // GAS mode
+  if(typeof google!=='undefined'&&google.script){
+    google.script.run
+      .withSuccessHandler(function(res){
+        thinkingEl.remove();
+        handleAIResult(res,messages);
+      })
+      .withFailureHandler(function(e){
+        thinkingEl.remove();
+        appendAIMsg('❌ เรียก API ไม่สำเร็จ: '+(e.message||e),'bot','err');
+        aiThinking=false;
+        document.getElementById('aiSend').disabled=false;
+      })
+      .callClaudeAPI(systemPrompt,messages);
+    return;
+  }
+
+  // Direct API (API key from localStorage)
+  var apiKey=localStorage.getItem('claudeApiKey')||'';
+  if(!apiKey){
+    thinkingEl.remove();
+    appendAIMsg('⚙️ กรุณาตั้งค่า API Key ก่อน (กดปุ่ม ⚙️ มุมขวาบน)','bot','err');
+    aiThinking=false;
+    document.getElementById('aiSend').disabled=false;
+    aiCfgOpen=false; toggleAICfg();
+    return;
+  }
+
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'x-api-key':apiKey,
+      'anthropic-version':'2023-06-01',
+      'content-type':'application/json',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:1024,
+      system:systemPrompt,
+      messages:messages
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    thinkingEl.remove();
+    if(data.error){appendAIMsg('❌ '+data.error.message,'bot','err');}
+    else{
+      var txt=data.content&&data.content[0]?data.content[0].text:'(ไม่มีคำตอบ)';
+      handleAIResult(txt,messages);
+    }
+  })
+  .catch(function(e){
+    thinkingEl.remove();
+    appendAIMsg('❌ Network error: '+e.message,'bot','err');
+  })
+  .finally(function(){
+    aiThinking=false;
+    document.getElementById('aiSend').disabled=false;
+  });
+}
+
+function handleAIResult(txt,messages){
+  aiThinking=false;
+  document.getElementById('aiSend').disabled=false;
+  if(!txt){appendAIMsg('(ไม่มีคำตอบ)','bot');return;}
+
+  // ตรวจหา JSON task ใน response
+  var jsonMatch=txt.match(/```json\s*([\s\S]*?)\s*```/);
+  var taskData=null;
+  if(jsonMatch){
+    try{taskData=JSON.parse(jsonMatch[1]);}catch(e){}
+  }
+
+  // แสดงข้อความ (ตัด JSON block ออก)
+  var displayTxt=txt.replace(/```json[\s\S]*?```/g,'').trim();
+  if(displayTxt) appendAIMsg(displayTxt,'bot');
+
+  // แสดง task preview ถ้ามี
+  if(taskData&&taskData.title){
+    showTaskPreview(taskData);
+  }
+
+  aiConversation.push({role:'assistant',content:txt});
+}
+
+function showTaskPreview(td){
+  var box=document.getElementById('aiMsgs');
+  var d=document.createElement('div');
+  d.className='ai-msg bot';
+  var today=new Date().toISOString().split('T')[0];
+  var due=td.dueDate||today;
+  var priTh=td.priority==='high'?'🔴 สูง':td.priority==='med'?'🟡 กลาง':'⚪ ต่ำ';
+  d.innerHTML='<div class="ai-task-preview">'
+    +'<div class="tp-title">📋 งานที่จะเพิ่ม</div>'
+    +'<div class="tp-row"><strong>ชื่องาน:</strong> '+esc(td.title)+'</div>'
+    +'<div class="tp-row"><strong>กลุ่มงาน:</strong> '+esc(td.workGroup||'อื่นๆ')+'</div>'
+    +'<div class="tp-row"><strong>กำหนดส่ง:</strong> '+fmtDate(due)+'</div>'
+    +'<div class="tp-row"><strong>ความสำคัญ:</strong> '+priTh+'</div>'
+    +(td.checklist?'<div class="tp-row"><strong>Checklist:</strong> '+esc(td.checklist.replace(/\n/g,', '))+'</div>':'')
+    +'<button class="ai-add-btn" onclick="aiCreateTask(this)">✅ เพิ่มภารกิจนี้</button>'
+    +'</div>';
+  // เก็บ data ไว้ใน button
+  d.querySelector('.ai-add-btn').dataset.task=JSON.stringify(td);
+  box.appendChild(d);
+  box.scrollTop=box.scrollHeight;
+}
+
+function aiCreateTask(btn){
+  var td=JSON.parse(btn.dataset.task);
+  var today=new Date().toISOString().split('T')[0];
+  var newTask={
+    id:Date.now().toString(),
+    workGroup:td.workGroup||'อื่นๆ (งาน)',
+    docNo:td.docNo||'[AI สร้าง]',
+    title:td.title||'งานใหม่',
+    dueDate:td.dueDate||today,
+    startDate:td.startDate||'',
+    priority:td.priority||'med',
+    taskStatus:'กำลังดำเนินการ',
+    space:td.space||'work',
+    meetingLink:'',fileLink:'',imageUrls:[],
+    details:'[สร้างโดย Claude AI]',
+    checklist:(td.checklist||'').split('\n').filter(function(x){return x.trim();}).map(function(x){return'[]'+x.trim();}).join('|'),
+    status:'active'
+  };
+  btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  showLoad();
+  gasCall(newTask,function(res){
+    tasks=res||tasks; render(); hideLoad();
+    btn.textContent='✓ เพิ่มแล้ว!';
+    appendAIMsg('✅ เพิ่มภารกิจ "'+newTask.title+'" เรียบร้อยแล้วครับ','bot');
+  },function(e){
+    hideLoad(); btn.disabled=false; btn.textContent='✅ เพิ่มภารกิจนี้';
+    alert('เพิ่มไม่สำเร็จ: '+(e.message||e));
+  });
+}
+
+// ── System prompt พร้อมข้อมูลงานปัจจุบัน ──
+function buildSystemPrompt(){
+  var today=new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+  var active=tasks.filter(function(t){return t.status==='active';});
+  var done=tasks.filter(function(t){return t.status==='completed';});
+  var urg=active.filter(function(t){return isUrg(t.dueDate)||isOver(t.dueDate);});
+
+  var taskList=active.slice(0,30).map(function(t,i){
+    var d=dLeft(t.dueDate);
+    return (i+1)+'. ['+t.workGroup+'] '+t.title+' — กำหนด: '+fmtDate(t.dueDate)+(d!==null?' ('+( d<0?'เกิน '+Math.abs(d)+' วัน':'เหลือ '+d+' วัน')+')'):'')+'  สถานะ: '+t.taskStatus;
+  }).join('\n');
+
+  return 'คุณคือ Claude AI ผู้ช่วยของ สำนักงานสาธารณสุขอำเภอเขาค้อ จ.เพชรบูรณ์ (สสอ.เขาค้อ)\n'
+    +'วันนี้คือ: '+today+'\n\n'
+    +'ข้อมูลภารกิจปัจจุบัน:\n'
+    +'- งานทั้งหมด: '+tasks.length+' รายการ\n'
+    +'- กำลังดำเนินการ: '+active.length+' รายการ\n'
+    +'- เร่งด่วน/เกินกำหนด: '+urg.length+' รายการ\n'
+    +'- เสร็จแล้ว: '+done.length+' รายการ\n\n'
+    +'รายการงานที่ดำเนินการอยู่:\n'+taskList+'\n\n'
+    +'กลุ่มงานที่มีในระบบ: งานพัฒนาคุณภาพ (PMQA), งานพัฒนาระบบข้อมูลฯ (IT), งานอุบัติเหตุ, งานคุ้มครองผู้บริโภคฯ, ปฐมภูมิและสุขภาพภาคประชาชน, ประกันสุขภาพ, รายงานสถิติ ตัวชี้วัด KPI, งานสิ่งแวดล้อม ENV, อื่นๆ (งาน)\n\n'
+    +'หากผู้ใช้ต้องการเพิ่มงาน ให้ตอบคำถามปกติ แล้วใส่ JSON block นี้ต่อท้ายด้วย:\n'
+    +'```json\n{"title":"...","workGroup":"...","dueDate":"YYYY-MM-DD","priority":"high|med|low","checklist":"รายการ1\\nรายการ2","space":"work"}\n```\n'
+    +'ตอบเป็นภาษาไทย กระชับ ตรงประเด็น เหมาะกับการทำงานราชการ';
+}
+
+// Enter key ส่ง
+document.addEventListener('DOMContentLoaded',function(){
+  var aiInp=document.getElementById('aiInp');
+  if(aiInp) aiInp.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAI();}
+  });
+});
+</script>
