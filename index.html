@@ -1240,6 +1240,141 @@ function isSupaConfigured(){
   var urlOk = SUPA_URL.indexOf('xxxxxxxxxxxx') < 0 && SUPA_URL.indexOf('PASTE') < 0;
   return keyOk && urlOk;
 }
+
+/* ════════ รายการรอยืนยันจากระบบสารบัญ (status = 'inbox') ════════
+   เพิ่มเข้ามาโดยไม่แตะโค้ดเดิม — งานเดิมกรอง status==='active' อยู่แล้ว
+   รายการ inbox จึงไม่ไปปนกับงานจริงจนกว่าผู้ใช้จะกดยืนยัน           */
+(function(){
+  var STYLE = '#sbInbox{background:linear-gradient(135deg,#fef3c7,#fde68a);'
+    + 'border:2px solid #f59e0b;border-radius:14px;padding:14px 16px;margin:0 0 16px}'
+    + '#sbInbox.empty{display:none}'
+    + '#sbInbox .ib-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer}'
+    + '#sbInbox .ib-ttl{font-weight:700;color:#92400e;font-size:16px}'
+    + '#sbInbox .ib-n{background:#dc2626;color:#fff;border-radius:20px;padding:1px 10px;font-size:13px;font-weight:700}'
+    + '#sbInbox .ib-sub{color:#92400e;font-size:12.5px;opacity:.85;flex:1}'
+    + '#sbInbox ul{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:9px}'
+    + '#sbInbox li{background:#fff;border-radius:10px;padding:11px 13px;border:1px solid #fcd34d}'
+    + '#sbInbox .ib-t{font-weight:600;font-size:14.5px;margin-bottom:3px;color:#111}'
+    + '#sbInbox .ib-m{font-size:12px;color:#6b7280;margin-bottom:6px}'
+    + '#sbInbox .ib-d{font-size:12.5px;color:#374151;white-space:pre-wrap;'
+    + 'max-height:5.2em;overflow:hidden;margin-bottom:8px;line-height:1.55}'
+    + '#sbInbox .ib-b{display:flex;gap:7px;flex-wrap:wrap}'
+    + '#sbInbox .ib-b button{border:0;border-radius:7px;padding:6px 13px;font-size:13px;'
+    + 'cursor:pointer;font-family:inherit}'
+    + '#sbInbox .ib-ok{background:#059669;color:#fff}'
+    + '#sbInbox .ib-no{background:#e5e7eb;color:#374151}'
+    + '#sbInbox .ib-lk{background:#eff6ff;color:#1d4ed8;text-decoration:none;'
+    + 'padding:6px 13px;border-radius:7px;font-size:13px;display:inline-block}'
+    + '#sbInbox .ib-tag{background:#eef2ff;color:#3730a3;border-radius:20px;'
+    + 'padding:1px 9px;font-size:11.5px;margin-right:5px}'
+    + '#sbInbox .ib-due{background:#fee2e2;color:#b91c1c}'
+    + '#sbInbox .ib-all{margin-top:10px}';
+
+  var st = document.createElement('style'); st.textContent = STYLE;
+  document.head.appendChild(st);
+
+  var open = true;
+
+  function box(){
+    var b = document.getElementById('sbInbox');
+    if (b) return b;
+    b = document.createElement('div'); b.id = 'sbInbox';
+    var anchor = document.getElementById('activeTasks');
+    if (!anchor) return null;
+    var sec = anchor.parentNode;
+    sec.insertBefore(b, anchor.parentNode.querySelector('.sec-hd') || anchor);
+    return b;
+  }
+
+  window.renderSbInbox = function(){
+    var b = box(); if (!b) return;
+    var items = (window.tasks || []).filter(function(t){ return t.status === 'inbox'; });
+    if (!items.length){ b.className = 'empty'; b.innerHTML = ''; return; }
+    b.className = '';
+
+    items.sort(function(a,c){ return (c.startDate||'').localeCompare(a.startDate||''); });
+
+    var h = '<div class="ib-hd" onclick="sbToggleInbox()">'
+      + '<span class="ib-ttl">📥 งานใหม่จากระบบสารบัญ</span>'
+      + '<span class="ib-n">' + items.length + '</span>'
+      + '<span class="ib-sub">รอคุณยืนยันก่อนเข้าเป็นภารกิจจริง</span>'
+      + '<span style="color:#92400e">' + (open ? '▾' : '▸') + '</span></div>';
+
+    if (open){
+      h += '<ul>';
+      items.forEach(function(t){
+        var due = t.dueDate
+          ? '<span class="ib-tag ib-due">กำหนด ' + t.dueDate + '</span>' : '';
+        var pri = t.priority === 'high'
+          ? '<span class="ib-tag ib-due">🔴 ด่วน</span>' : '';
+        h += '<li>'
+          + '<div class="ib-t">' + esc(t.title) + '</div>'
+          + '<div class="ib-m">' + pri + due
+          + '<span class="ib-tag">' + esc(t.workGroup) + '</span>'
+          + esc(t.docNo || '') + ' · รับ ' + esc(t.startDate || '-') + '</div>'
+          + '<div class="ib-d">' + esc(t.details || '') + '</div>'
+          + '<div class="ib-b">'
+          + '<button class="ib-ok" onclick="sbConfirm(\'' + t.id + '\')">✓ ยืนยัน เพิ่มเป็นภารกิจ</button>'
+          + '<button class="ib-no" onclick="sbReject(\'' + t.id + '\')">✕ ไม่เกี่ยวกับผม</button>'
+          + (t.fileLink ? '<a class="ib-lk" href="' + t.fileLink + '" target="_blank">เปิดหนังสือต้นฉบับ ↗</a>' : '')
+          + '</div></li>';
+      });
+      h += '</ul>';
+      if (items.length > 1){
+        h += '<div class="ib-all"><button class="ib-no" onclick="sbRejectAll()">'
+          + 'ปฏิเสธทั้งหมด (' + items.length + ')</button></div>';
+      }
+    }
+    b.innerHTML = h;
+
+    // ไม่ให้รายการรอยืนยันไปพองตัวเลข "งานทั้งหมด"
+    var sAll = document.getElementById('sAll');
+    if (sAll) {
+      sAll.textContent = (window.tasks || []).filter(function(t){
+        return t.status !== 'inbox' && t.status !== 'rejected';
+      }).length;
+    }
+  };
+
+  function esc(s){
+    return (s == null ? '' : String(s))
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  window.sbToggleInbox = function(){ open = !open; renderSbInbox(); };
+
+  async function setStatus(id, status){
+    var r = await getSupa().from('tasks').update({ status: status }).eq('id', id);
+    if (r.error) { alert('ไม่สำเร็จ: ' + r.error.message); return false; }
+    var t = (window.tasks || []).find(function(x){ return x.id === id; });
+    if (t) t.status = status;
+    return true;
+  }
+
+  window.sbConfirm = async function(id){
+    if (await setStatus(id, 'active')) render();
+  };
+
+  window.sbReject = async function(id){
+    if (await setStatus(id, 'rejected')) render();
+  };
+
+  window.sbRejectAll = async function(){
+    var items = (window.tasks || []).filter(function(t){ return t.status === 'inbox'; });
+    if (!confirm('ปฏิเสธทั้งหมด ' + items.length + ' รายการ?')) return;
+    for (var i = 0; i < items.length; i++) await setStatus(items[i].id, 'rejected');
+    render();
+  };
+
+  // ต่อท้าย render เดิม โดยไม่แก้ของเดิม
+  var origRender = window.render;
+  window.render = function(){
+    origRender.apply(this, arguments);
+    try { renderSbInbox(); } catch(e){ console.error('inbox:', e); }
+  };
+})();
+
 </script>
 </body>
 </html>
