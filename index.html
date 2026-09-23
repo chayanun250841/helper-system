@@ -2,7 +2,14 @@
 <html lang="th" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Helper">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/helper-icon-180.png">
+<link rel="icon" href="/icons/helper-icon.svg" type="image/svg+xml">
 <title>Helper System — สสอ.เขาค้อ</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <!-- Supabase JS SDK -->
@@ -276,7 +283,30 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
 .ai-cfg-inp{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;font-family:monospace;outline:none;margin-bottom:8px;transition:border .15s;}
 .ai-cfg-inp:focus{border-color:var(--ai);}
 .ai-cfg-save{background:var(--ai);border:none;color:#fff;font-size:13px;font-weight:600;padding:7px 18px;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;}
-@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr);}.form-grid{grid-template-columns:1fr;}.fg.full{grid-column:span 1;}.hdr{flex-wrap:wrap;gap:8px;}.hdr-right{width:100%;justify-content:flex-end;}.ai-panel{width:calc(100vw - 16px);right:8px;}}
+/* ── AUTOMATION CONTROL CENTER ── */
+.auto-center{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow);}
+.auto-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.auto-title{font-size:14px;font-weight:700;color:var(--text);}
+.auto-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.auto-hd-right{display:flex;align-items:center;gap:8px;}
+.auto-badge{font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);}
+.auto-badge.ready{color:var(--green);border-color:rgba(5,150,105,.25);background:rgba(5,150,105,.08);}
+.auto-badge.wait{color:var(--amber);border-color:rgba(217,119,6,.25);background:rgba(217,119,6,.08);}
+.auto-refresh{background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:7px;padding:5px 9px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:12px;}
+.auto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+.auto-card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:11px 12px;min-height:86px;}
+.auto-card-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;margin-bottom:7px;}
+.auto-card-main{font-size:14px;font-weight:700;color:var(--text);line-height:1.35;}
+.auto-card-main.ok{color:var(--green);}
+.auto-card-main.warn{color:var(--amber);}
+.auto-card-main.err{color:var(--red);}
+.auto-card-detail{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.45;word-break:break-word;}
+.auto-jobs{margin-top:10px;border-top:1px solid var(--border);padding-top:9px;}
+.auto-job{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:6px 2px;border-bottom:1px solid var(--border);}
+.auto-job:last-child{border-bottom:none;}
+.auto-job-name{font-size:12px;font-weight:600;color:var(--text);}
+.auto-job-meta{font-size:11px;color:var(--text3);text-align:right;white-space:nowrap;}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr);}.form-grid{grid-template-columns:1fr;}.fg.full{grid-column:span 1;}.hdr{flex-wrap:wrap;gap:8px;}.hdr-right{width:100%;justify-content:flex-end;}.ai-panel{width:calc(100vw - 16px);right:8px;}.auto-grid{grid-template-columns:1fr;}.auto-hd{align-items:flex-start;}.auto-hd-right{flex-shrink:0;}}
 </style>
 </head>
 <body>
@@ -312,6 +342,39 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
   <div class="stat s-urg"><div class="stat-lbl">ด่วน / เกินกำหนด</div><div class="stat-num" id="sUrg">0</div></div>
   <div class="stat s-done"><div class="stat-lbl">เสร็จแล้ว</div><div class="stat-num" id="sDone">0</div></div>
 </div>
+
+<section class="auto-center" id="automationCenter">
+  <div class="auto-hd">
+    <div>
+      <div class="auto-title">🤖 AUTOMATION CONTROL CENTER</div>
+      <div class="auto-sub">AgentChayanun · ตารางงาน · งานที่รอคุณ</div>
+    </div>
+    <div class="auto-hd-right">
+      <span class="auto-badge" id="autoCenterBadge">กำลังตรวจ</span>
+      <button class="auto-refresh" type="button" onclick="loadAutomationCenter(true)">↻</button>
+    </div>
+  </div>
+  <div class="auto-grid">
+    <div class="auto-card">
+      <div class="auto-card-lbl">AGENT</div>
+      <div class="auto-card-main" id="autoAgentMain">กำลังตรวจ...</div>
+      <div class="auto-card-detail" id="autoAgentDetail">AgentChayanun</div>
+    </div>
+    <div class="auto-card">
+      <div class="auto-card-lbl">CURRENT RUN</div>
+      <div class="auto-card-main" id="autoRunMain">—</div>
+      <div class="auto-card-detail" id="autoRunDetail">ยังไม่มีข้อมูลการรัน</div>
+    </div>
+    <div class="auto-card">
+      <div class="auto-card-lbl">WAITING FOR YOU</div>
+      <div class="auto-card-main" id="autoGateMain">0 งาน</div>
+      <div class="auto-card-detail" id="autoGateDetail">ไม่มีงานที่รอการยืนยัน</div>
+    </div>
+  </div>
+  <div class="auto-jobs" id="autoJobs">
+    <div class="auto-card-detail">กำลังโหลดตารางงานอัตโนมัติ...</div>
+  </div>
+</section>
 
 <div class="view-bar">
   <button class="vbtn on" id="btnList" onclick="switchView('list')">📋 รายการ</button>
@@ -1375,6 +1438,163 @@ function isSupaConfigured(){
   };
 })();
 
+</script>
+<script>
+(function(){
+  var ACTIVE_RUN_STATES=['SCHEDULED','STARTING','RUNNING','WAITING_FOR_HUMAN','RETRYING','RECOVERING','NEEDS_USER'];
+
+  function autoEl(id){ return document.getElementById(id); }
+  function autoText(id,text,cls){
+    var el=autoEl(id); if(!el)return;
+    el.textContent=text;
+    el.className='auto-card-main'+(cls?' '+cls:'');
+  }
+  function autoDetail(id,text){ var el=autoEl(id); if(el)el.textContent=text; }
+  function autoEsc(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function autoDate(v){
+    if(!v)return 'ยังไม่กำหนด';
+    try{return new Date(v).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});}
+    catch(e){return String(v);}
+  }
+  function stateTh(s){
+    var m={
+      SCHEDULED:'รอเวลา',STARTING:'กำลังเริ่ม',RUNNING:'กำลังทำ',
+      WAITING_FOR_HUMAN:'รอคุณ',RETRYING:'กำลังลองใหม่',RECOVERING:'กำลังกู้คืน',
+      NEEDS_USER:'ต้องให้คุณตรวจ',COMPLETED:'เสร็จแล้ว',FAILED:'ล้มเหลว',CANCELLED:'ยกเลิก'
+    };
+    return m[s]||s||'—';
+  }
+  function missingTable(err){
+    if(!err)return false;
+    var msg=(err.message||'')+' '+(err.details||'');
+    return err.code==='PGRST205'||err.code==='42P01'||/Could not find the table|does not exist/i.test(msg);
+  }
+  function renderSetup(message){
+    var b=autoEl('autoCenterBadge');
+    if(b){b.textContent='เตรียมระบบ';b.className='auto-badge wait';}
+    autoText('autoAgentMain','ยังไม่เชื่อม Agent','warn');
+    autoDetail('autoAgentDetail',message||'Automation backend ยังไม่ได้เปิดใช้');
+    autoText('autoRunMain','ยังไม่เริ่ม','');
+    autoDetail('autoRunDetail','หน้าเดิมยังใช้งานได้ตามปกติ');
+    autoText('autoGateMain','0 งาน','');
+    autoDetail('autoGateDetail','ยังไม่มี Human Gate');
+    var jobs=autoEl('autoJobs');
+    if(jobs)jobs.innerHTML='<div class="auto-card-detail">'+autoEsc(message||'รอเปิด Automation schema')+'</div>';
+  }
+  function renderJobs(items){
+    var jobs=autoEl('autoJobs'); if(!jobs)return;
+    if(!items||!items.length){
+      jobs.innerHTML='<div class="auto-card-detail">ยังไม่มีงานอัตโนมัติที่เปิดใช้งาน</div>';
+      return;
+    }
+    var h='';
+    items.forEach(function(j){
+      var schedule=j.schedule_expr||j.schedule_kind||'manual';
+      h+='<div class="auto-job"><div><div class="auto-job-name">'+autoEsc(j.name)+'</div>'
+        +'<div class="auto-card-detail">'+autoEsc(j.workflow_key||'')+'</div></div>'
+        +'<div class="auto-job-meta">'+autoEsc(schedule)+'<br>'+autoEsc(autoDate(j.next_run_at))+'</div></div>';
+    });
+    jobs.innerHTML=h;
+  }
+
+  window.loadAutomationCenter=async function(){
+    var badge=autoEl('autoCenterBadge');
+    if(badge){badge.textContent='กำลังตรวจ';badge.className='auto-badge';}
+    if(typeof getSupa!=='function'||typeof isSupaConfigured!=='function'||!isSupaConfigured()){
+      renderSetup('Supabase ยังไม่ได้ตั้งค่า');
+      return;
+    }
+
+    try{
+      var supa=getSupa();
+      var results=await Promise.all([
+        supa.auth.getSession(),
+        supa.from('agent_status')
+          .select('agent_id,online,version,last_seen_at,current_activity')
+          .order('last_seen_at',{ascending:false}).limit(1),
+        supa.from('agent_runs')
+          .select('id,state,current_step,progress,started_at,heartbeat_at,automation_job_id')
+          .in('state',ACTIVE_RUN_STATES)
+          .order('created_at',{ascending:false}).limit(1),
+        supa.from('human_gates')
+          .select('id,gate_type,state,message,created_at')
+          .eq('state','WAITING').order('created_at',{ascending:false}).limit(5),
+        supa.from('automation_jobs')
+          .select('id,name,workflow_key,schedule_kind,schedule_expr,next_run_at,enabled')
+          .eq('enabled',true).order('next_run_at',{ascending:true,nullsFirst:false}).limit(5)
+      ]);
+
+      var sessionRes=results[0], agentRes=results[1], runRes=results[2], gateRes=results[3], jobRes=results[4];
+      var errors=[agentRes.error,runRes.error,gateRes.error,jobRes.error].filter(Boolean);
+      if(errors.some(missingTable)){
+        renderSetup('Automation schema เตรียมไว้แล้ว แต่ยังไม่ได้ apply ใน Supabase');
+        return;
+      }
+      if(errors.length){
+        renderSetup('Automation backend ยังอ่านไม่ได้: '+(errors[0].message||'permission error'));
+        return;
+      }
+
+      var session=sessionRes&&sessionRes.data?sessionRes.data.session:null;
+      if(!session){
+        if(badge){badge.textContent='รอ Auth';badge.className='auto-badge wait';}
+      }else{
+        if(badge){badge.textContent='พร้อม';badge.className='auto-badge ready';}
+      }
+
+      var agent=agentRes.data&&agentRes.data[0];
+      if(agent){
+        autoText('autoAgentMain',agent.online?'🟢 Online':'⚪ Offline',agent.online?'ok':'');
+        autoDetail('autoAgentDetail',(agent.agent_id||'AgentChayanun')
+          +(agent.version?' · v'+agent.version:'')
+          +(agent.current_activity?' · '+agent.current_activity:'')
+          +(agent.last_seen_at?' · '+autoDate(agent.last_seen_at):''));
+      }else{
+        autoText('autoAgentMain','⚪ ยังไม่มี heartbeat','');
+        autoDetail('autoAgentDetail',session?'รอ AgentChayanun รายงานสถานะ':'ต้องเปิด Auth ก่อนเชื่อม Agent');
+      }
+
+      var run=runRes.data&&runRes.data[0];
+      if(run){
+        var runClass=run.state==='WAITING_FOR_HUMAN'||run.state==='NEEDS_USER'?'warn':'ok';
+        autoText('autoRunMain',stateTh(run.state)+' · '+(run.progress||0)+'%',runClass);
+        autoDetail('autoRunDetail',(run.current_step||'กำลังเตรียมงาน')
+          +(run.heartbeat_at?' · ล่าสุด '+autoDate(run.heartbeat_at):''));
+      }else{
+        autoText('autoRunMain','ว่าง','');
+        autoDetail('autoRunDetail','ไม่มี Automation ที่กำลังทำ');
+      }
+
+      var gates=gateRes.data||[];
+      autoText('autoGateMain',gates.length+' งาน',gates.length?'warn':'');
+      autoDetail('autoGateDetail',gates.length
+        ? ((gates[0].gate_type||'APPROVAL')+' · '+(gates[0].message||'ต้องการการยืนยัน'))
+        : 'ไม่มีงานที่รอการยืนยัน');
+
+      renderJobs(jobRes.data||[]);
+    }catch(e){
+      renderSetup('ตรวจ Automation ไม่สำเร็จ: '+e.message);
+    }
+  };
+
+  window.addEventListener('load',function(){
+    setTimeout(function(){window.loadAutomationCenter();},400);
+    setInterval(function(){window.loadAutomationCenter();},30000);
+  });
+})();
+</script>
+<script>
+// PWA shell: installable on supported mobile browsers without changing task behavior.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/sw.js').catch(function(err){
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>

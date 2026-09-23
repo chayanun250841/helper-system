@@ -1,0 +1,16 @@
+# Helper System local secrets
+*API KEY.txt
+*API*.txt
+*KEY*.txt
+.env
+.env.*
+!.env.example
+
+# Local backups / scratch
+*.backup-*
+*.bak
+*.tmp
+
+# OS / editor
+.DS_Store
+Thumbs.db
