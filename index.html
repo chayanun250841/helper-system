@@ -283,6 +283,16 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
 .ai-cfg-inp{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;font-family:monospace;outline:none;margin-bottom:8px;transition:border .15s;}
 .ai-cfg-inp:focus{border-color:var(--ai);}
 .ai-cfg-save{background:var(--ai);border:none;color:#fff;font-size:13px;font-weight:600;padding:7px 18px;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;}
+/* ── AUTH ── */
+.auth-btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-size:12px;padding:6px 11px;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;white-space:nowrap;}
+.auth-btn.on{color:var(--green);border-color:rgba(5,150,105,.28);background:rgba(5,150,105,.07);}
+.auth-inp{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Sarabun',sans-serif;font-size:14px;outline:none;}
+.auth-inp:focus{border-color:var(--accent);}
+.auth-note{font-size:12px;color:var(--text3);line-height:1.7;margin-top:8px;}
+.auth-msg{font-size:12px;line-height:1.6;margin-top:10px;color:var(--text2);min-height:20px;}
+.auth-msg.ok{color:var(--green);}
+.auth-msg.err{color:var(--red);}
+.auth-primary{flex:1;background:var(--accent);border:none;color:#fff;font-size:14px;font-weight:600;padding:10px;border-radius:8px;cursor:pointer;font-family:'Sarabun',sans-serif;}
 /* ── AUTOMATION CONTROL CENTER ── */
 .auto-center{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow);}
 .auto-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
@@ -324,6 +334,29 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
   </div>
 </div>
 
+<!-- AUTH MODAL -->
+<div class="modal-bg" id="authModal" style="z-index:10001;">
+  <div class="modal" style="max-width:430px;">
+    <div class="modal-title">🔐 บัญชี Helper System</div>
+    <div id="authSignedOut">
+      <input class="auth-inp" id="authEmail" type="email" inputmode="email" autocomplete="email" placeholder="อีเมลสำหรับรับลิงก์เข้าสู่ระบบ">
+      <div class="auth-note">ระบบจะส่ง Magic Link ผ่าน Supabase Auth เมื่อเราเปิด Security migration จริง ปัจจุบันเตรียมหน้า Login ไว้ก่อนและยังไม่บังคับล็อกอิน</div>
+      <div class="auth-msg" id="authMsg"></div>
+      <div class="modal-btns">
+        <button class="auth-primary" id="authSendBtn" type="button" onclick="sendAuthLink()">ส่งลิงก์เข้าสู่ระบบ</button>
+        <button class="btn-close" type="button" onclick="closeAuthModal()">ปิด</button>
+      </div>
+    </div>
+    <div id="authSignedIn" style="display:none;">
+      <div class="export-text" id="authAccountText" style="max-height:none;"></div>
+      <div class="modal-btns">
+        <button class="btn-copy" type="button" onclick="helperSignOut()">ออกจากระบบ</button>
+        <button class="btn-close" type="button" onclick="closeAuthModal()">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="page">
 <div class="hdr">
   <div>
@@ -331,6 +364,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
     <div class="hdr-sub">สำนักงานสาธารณสุขอำเภอเขาค้อ จ.เพชรบูรณ์</div>
   </div>
   <div class="hdr-right">
+    <button class="auth-btn" id="authBtn" onclick="openAuthModal()">🔐 เข้าสู่ระบบ</button>
     <button class="export-btn" onclick="openExport()">📊 สรุปเดือนนี้</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️ สว่าง</button>
   </div>
@@ -1438,6 +1472,105 @@ function isSupaConfigured(){
   };
 })();
 
+</script>
+<script>
+(function(){
+  var helperSession=null;
+
+  function authEl(id){return document.getElementById(id);}
+  function setAuthMessage(text,kind){
+    var el=authEl('authMsg'); if(!el)return;
+    el.textContent=text||'';
+    el.className='auth-msg'+(kind?' '+kind:'');
+  }
+  function renderAuth(session){
+    helperSession=session||null;
+    var btn=authEl('authBtn');
+    var out=authEl('authSignedOut');
+    var inn=authEl('authSignedIn');
+    if(session&&session.user){
+      if(btn){btn.textContent='✅ ลงชื่อเข้าใช้แล้ว';btn.className='auth-btn on';}
+      if(out)out.style.display='none';
+      if(inn)inn.style.display='block';
+      var account=authEl('authAccountText');
+      if(account){
+        var email=(session.user.email||'บัญชี Supabase');
+        account.textContent='ลงชื่อเข้าใช้แล้ว\n'+email+'\nSession จะถูกเก็บโดย Supabase บนอุปกรณ์นี้';
+      }
+    }else{
+      if(btn){btn.textContent='🔐 เข้าสู่ระบบ';btn.className='auth-btn';}
+      if(out)out.style.display='block';
+      if(inn)inn.style.display='none';
+    }
+  }
+
+  window.refreshAuthState=async function(){
+    try{
+      if(typeof getSupa!=='function')return;
+      var res=await getSupa().auth.getSession();
+      renderAuth(res&&res.data?res.data.session:null);
+    }catch(e){
+      console.warn('Auth state:',e);
+    }
+  };
+
+  window.openAuthModal=function(){
+    var m=authEl('authModal'); if(m)m.className='modal-bg open';
+    window.refreshAuthState();
+  };
+  window.closeAuthModal=function(){
+    var m=authEl('authModal'); if(m)m.className='modal-bg';
+    setAuthMessage('');
+  };
+
+  window.sendAuthLink=async function(){
+    var input=authEl('authEmail');
+    var email=input?input.value.trim():'';
+    var btn=authEl('authSendBtn');
+    if(!email||email.indexOf('@')<1){
+      setAuthMessage('กรุณากรอกอีเมลให้ถูกต้อง','err');
+      return;
+    }
+    if(btn)btn.disabled=true;
+    setAuthMessage('กำลังส่งลิงก์...');
+    try{
+      var redirect=window.location.origin+window.location.pathname;
+      var res=await getSupa().auth.signInWithOtp({
+        email:email,
+        options:{emailRedirectTo:redirect}
+      });
+      if(res.error)throw res.error;
+      setAuthMessage('ส่งลิงก์แล้ว กรุณาเปิดอีเมลบนอุปกรณ์นี้เพื่อเข้าสู่ระบบ','ok');
+    }catch(e){
+      setAuthMessage('ส่งลิงก์ไม่สำเร็จ: '+e.message,'err');
+    }finally{
+      if(btn)btn.disabled=false;
+    }
+  };
+
+  window.helperSignOut=async function(){
+    try{
+      await getSupa().auth.signOut();
+      renderAuth(null);
+      closeAuthModal();
+      if(typeof loadAutomationCenter==='function')loadAutomationCenter(true);
+    }catch(e){
+      setAuthMessage('ออกจากระบบไม่สำเร็จ: '+e.message,'err');
+    }
+  };
+
+  window.addEventListener('load',function(){
+    window.refreshAuthState();
+    if(typeof getSupa==='function'){
+      try{
+        getSupa().auth.onAuthStateChange(function(event,session){
+          renderAuth(session);
+          if(typeof loadAutomationCenter==='function')setTimeout(function(){loadAutomationCenter(true);},50);
+        });
+      }catch(e){console.warn('Auth subscription:',e);}
+    }
+  });
+})();
 </script>
 <script>
 (function(){
