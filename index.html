@@ -1643,8 +1643,22 @@ function isSupaConfigured(){
 
     try{
       var supa=getSupa();
+      var sessionRes=await supa.auth.getSession();
+      var session=sessionRes&&sessionRes.data?sessionRes.data.session:null;
+
+      if(!session){
+        if(badge){badge.textContent='รอ Auth';badge.className='auto-badge wait';}
+        autoText('autoAgentMain','🔐 เข้าสู่ระบบเพื่อดู Agent','');
+        autoDetail('autoAgentDetail','ข้อมูล Automation จำกัดเฉพาะบัญชีเจ้าของระบบ');
+        autoText('autoRunMain','ยังไม่แสดง','');
+        autoDetail('autoRunDetail','เข้าสู่ระบบก่อนเพื่อดูสถานะงานอัตโนมัติ');
+        autoText('autoGateMain','0 งาน','');
+        autoDetail('autoGateDetail','เข้าสู่ระบบก่อนเพื่อดู Human Gate');
+        renderJobs([]);
+        return;
+      }
+
       var results=await Promise.all([
-        supa.auth.getSession(),
         supa.from('agent_status')
           .select('agent_id,online,version,last_seen_at,current_activity')
           .order('last_seen_at',{ascending:false}).limit(1),
@@ -1660,7 +1674,7 @@ function isSupaConfigured(){
           .eq('enabled',true).order('next_run_at',{ascending:true,nullsFirst:false}).limit(5)
       ]);
 
-      var sessionRes=results[0], agentRes=results[1], runRes=results[2], gateRes=results[3], jobRes=results[4];
+      var agentRes=results[0], runRes=results[1], gateRes=results[2], jobRes=results[3];
       var errors=[agentRes.error,runRes.error,gateRes.error,jobRes.error].filter(Boolean);
       if(errors.some(missingTable)){
         renderSetup('Automation schema เตรียมไว้แล้ว แต่ยังไม่ได้ apply ใน Supabase');
@@ -1671,12 +1685,7 @@ function isSupaConfigured(){
         return;
       }
 
-      var session=sessionRes&&sessionRes.data?sessionRes.data.session:null;
-      if(!session){
-        if(badge){badge.textContent='รอ Auth';badge.className='auto-badge wait';}
-      }else{
-        if(badge){badge.textContent='พร้อม';badge.className='auto-badge ready';}
-      }
+      if(badge){badge.textContent='พร้อม';badge.className='auto-badge ready';}
 
       var agent=agentRes.data&&agentRes.data[0];
       if(agent){
