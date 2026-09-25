@@ -351,6 +351,9 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
 .reg-open{border:1px solid rgba(37,99,235,.22);background:rgba(37,99,235,.07);color:var(--accent);border-radius:7px;padding:6px 9px;cursor:pointer;font:700 11px 'Sarabun',sans-serif;white-space:nowrap;}
 .reg-empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px;}
 .reg-sync{font-size:10px;color:var(--text3);margin-left:auto;}
+.saraban-pull-btn{background:#059669;border:1px solid #047857;color:#fff;border-radius:8px;padding:7px 11px;cursor:pointer;font:700 12px 'Sarabun',sans-serif;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.saraban-pull-btn:hover{background:#047857}.saraban-pull-btn:disabled{opacity:.65;cursor:wait}
+.saraban-pull-status{font-size:10px;color:var(--text3);white-space:nowrap}
 /* ── SARABAN IN-APP VIEWER ── */
 .sv-bg{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:12000;display:none;align-items:stretch;justify-content:center;padding:18px;}
 .sv-bg.open{display:flex;}
@@ -640,7 +643,9 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
           <input class="reg-inp reg-q" id="regQ" placeholder="ค้นชื่อเรื่อง เลขหนังสือ เลขรับ หรือหน่วยงาน" oninput="renderRegistry()">
           <label class="reg-check"><input type="checkbox" id="regUrgent" onchange="renderRegistry()"> เฉพาะด่วน</label>
           <button class="reg-reset" type="button" onclick="regReset()">ล้างตัวกรอง</button>
+          <button class="saraban-pull-btn" data-default-label="📥 ดึงงานใหม่จากสารบรรณ" type="button" onclick="regPullNow()">📥 ดึงงานใหม่จากสารบรรณ</button>
           <button class="reg-refresh" type="button" onclick="loadRegistry(true)">↻ รีเฟรช</button>
+          <span class="saraban-pull-status"></span>
           <span class="reg-sync" id="regSync"></span>
         </div>
       </div>
@@ -1019,6 +1024,115 @@ function regReset(){
   document.getElementById('regArea').value='';document.getElementById('regQ').value='';document.getElementById('regUrgent').checked=false;
   regSetScope('all');var b=document.querySelectorAll('#regRanges button')[1];regSetRange(30,b);
 }
+function regPullUi(text,busy){
+  document.querySelectorAll('.saraban-pull-btn').forEach(function(b){
+    if(!b.dataset.defaultLabel)b.dataset.defaultLabel=b.textContent;
+    b.disabled=!!busy;
+    b.textContent=busy?(text||'⏳ กำลังดึง...'):b.dataset.defaultLabel;
+  });
+}
+function regPullStatus(text){
+  document.querySelectorAll('.saraban-pull-status').forEach(function(e){e.textContent=text||'';});
+}
+var regPullTimer=null;
+async function regWatchPull(requestId,requestedAt){
+  if(regPullTimer){clearInterval(regPullTimer);regPullTimer=null;}
+  var started=Date.now(),key='morning-document-registry:manual:'+requestId,done=false;
+  async function check(){
+    try{
+      var supa=getSupa();
+      var pair=await Promise.all([
+        supa.from('automation_jobs').select('manual_request_id,manual_requested_at').eq('workflow_key','morning-document-registry').maybeSingle(),
+        supa.from('agent_runs').select('state,current_step,progress,result_summary,error_message,created_at').eq('idempotency_key',key).maybeSingle()
+      ]);
+      var job=pair[0],run=pair[1];
+      if(job.error)throw job.error;
+      if(!job.data||job.data.manual_request_id!==requestId){
+        if(regPullTimer){clearInterval(regPullTimer);regPullTimer=null;}
+        regPullUi('',false);
+        var rr=run&&run.data;
+        if(rr&&rr.state==='FAILED')regPullStatus('⚠️ ดึงไม่สำเร็จ: '+(rr.error_message||'ตรวจสถานะ Agent'));
+        else regPullStatus('✅ อัปเดตแล้ว '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}));
+        registryLoaded=false;
+        try{await loadRegistry(true);}catch(e){}
+        try{if(typeof supaLoadTasks==='function')await supaLoadTasks();}catch(e){}
+        try{if(typeof loadAutomationCenter==='function')await loadAutomationCenter(true);}catch(e){}
+        setTimeout(function(){regPullStatus('');},8000);
+        done=true;
+        return;
+      }
+      var r=run&&run.data;
+      if(r){
+        if(r.state==='WAITING_FOR_HUMAN'||r.state==='NEEDS_USER'){
+          regPullUi('🔐 รอยืนยันตัวตน',true);
+          regPullStatus((r.current_step||'รอยืนยัน e-Office/ThaID')+' · '+(r.progress||0)+'%');
+        }else{
+          regPullUi('⏳ กำลังดึง '+(r.progress||0)+'%',true);
+          regPullStatus(r.current_step||'Agent กำลังตรวจสารบรรณ');
+        }
+      }else{
+        regPullUi('⏳ รอ Agent...',true);
+        regPullStatus('ส่งคำสั่งแล้ว · Agent จะรับภายในประมาณ 30 วินาที');
+      }
+      if(Date.now()-started>5*60*1000){
+        if(regPullTimer){clearInterval(regPullTimer);regPullTimer=null;}
+        regPullUi('',false);
+        regPullStatus('คำสั่งยังค้างอยู่ — ดูสถานะ Automation ด้านบน');
+        done=true;
+      }
+    }catch(e){
+      regPullStatus('ตรวจสถานะไม่ได้: '+(e.message||e));
+    }
+  }
+  await check();
+  if(!done&&!regPullTimer)regPullTimer=setInterval(check,3000);
+}
+async function regPullNow(){
+  if(typeof getSupa!=='function'||!isSupaConfigured()){alert('Supabase ยังไม่พร้อม');return;}
+  try{
+    var supa=getSupa(),ses=await supa.auth.getSession();
+    if(!ses.data||!ses.data.session){if(typeof openAuthModal==='function')openAuthModal();else alert('กรุณาเข้าสู่ระบบ Helper ก่อน');return;}
+    var existing=await supa.from('automation_jobs')
+      .select('manual_request_id,manual_requested_at')
+      .eq('workflow_key','morning-document-registry').maybeSingle();
+    if(existing.error)throw existing.error;
+    if(existing.data&&existing.data.manual_request_id){
+      regPullUi('⏳ มีคำสั่งค้าง',true);
+      regPullStatus('กำลังทำคำสั่งที่ส่งไว้ก่อนหน้า');
+      await regWatchPull(existing.data.manual_request_id,existing.data.manual_requested_at);
+      return;
+    }
+    var requestId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():
+      'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16);});
+    var requestedAt=new Date().toISOString();
+    regPullUi('⏳ ส่งคำสั่ง...',true);regPullStatus('กำลังส่งคำสั่งให้ AgentChayanun');
+    var res=await supa.from('automation_jobs')
+      .update({manual_request_id:requestId,manual_requested_at:requestedAt})
+      .eq('workflow_key','morning-document-registry').eq('enabled',true)
+      .select('id').maybeSingle();
+    if(res.error)throw res.error;
+    if(!res.data)throw new Error('ไม่พบงานอัตโนมัติ morning-document-registry ที่เปิดใช้งาน');
+    regPullStatus('ส่งคำสั่งแล้ว · Agent จะรับภายในประมาณ 30 วินาที');
+    try{if(typeof loadAutomationCenter==='function')loadAutomationCenter(true);}catch(e){}
+    await regWatchPull(requestId,requestedAt);
+  }catch(e){
+    regPullUi('',false);regPullStatus('');
+    alert('สั่งดึงงานไม่สำเร็จ: '+(e.message||e));
+  }
+}
+async function regResumePendingPull(){
+  try{
+    if(typeof getSupa!=='function'||!isSupaConfigured())return;
+    var ses=await getSupa().auth.getSession();if(!ses.data||!ses.data.session)return;
+    var r=await getSupa().from('automation_jobs').select('manual_request_id,manual_requested_at')
+      .eq('workflow_key','morning-document-registry').maybeSingle();
+    if(r.data&&r.data.manual_request_id){
+      regPullUi('⏳ มีคำสั่งค้าง',true);
+      regPullStatus('กำลังตรวจคำสั่งดึงสารบรรณ');
+      regWatchPull(r.data.manual_request_id,r.data.manual_requested_at);
+    }
+  }catch(e){}
+}
 function regThaiDate(s){
   if(!s)return'-';var p=String(s).slice(0,10).split('-');if(p.length!==3)return esc(s);
   var mo=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -1105,6 +1219,7 @@ async function loadRegistry(force){
     if(!ses.data||!ses.data.session){
       body.innerHTML='<tr><td colspan="6" class="reg-empty">🔐 กรุณาลงชื่อเข้าใช้ Helper ก่อนดูทะเบียนงาน</td></tr>';cnt.textContent='ต้องเข้าสู่ระบบ';return;
     }
+    regResumePendingPull();
     var res=await getSupa().from('saraban_registry')
       .select('detailsend_id,doc_id,rec_no,doc_no,doc_header,send_from,doc_dear,received_at,received_date,speed_name,doc_rec_status,areas,mine,org_area,nfiles,summary_text,deadline,when_text,where_text,source_url,synced_at')
       .order('received_date',{ascending:false,nullsFirst:false})
@@ -1712,6 +1827,8 @@ function isSupaConfigured(){
       + '<span class="ib-ttl">📥 งานใหม่จากระบบสารบัญ</span>'
       + '<span class="ib-n">' + items.length + '</span>'
       + '<span class="ib-sub">รอคุณยืนยันก่อนเข้าเป็นภารกิจจริง</span>'
+      + '<button class="saraban-pull-btn" data-default-label="📥 ดึงงานใหม่" type="button" onclick="event.stopPropagation();regPullNow()">📥 ดึงงานใหม่</button>'
+      + '<span class="saraban-pull-status"></span>'
       + '<span style="color:#92400e">' + (open ? '▾' : '▸') + '</span></div>';
 
     if (open){
