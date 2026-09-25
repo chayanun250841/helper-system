@@ -1020,6 +1020,11 @@ function renderRegistry(){
     if(q){var hay=[r.rec_no,r.doc_no,r.doc_header,r.send_from,r.org_area,r.areas,r.summary_text].join(' ').toLowerCase();if(hay.indexOf(q)<0)return false;}
     return true;
   });
+  rows.sort(function(a,b){
+    var da=a.received_date||String(a.received_at||'').slice(0,10),db=b.received_date||String(b.received_at||'').slice(0,10);
+    if(da!==db)return db.localeCompare(da);
+    return Number(b.rec_no||0)-Number(a.rec_no||0);
+  });
   document.getElementById('regCount').textContent=rows.length+' ฉบับ';
   var latest=registryRows.reduce(function(a,r){return(!a||String(r.synced_at||'')>a)?String(r.synced_at||''):a;},'');
   document.getElementById('regSync').textContent=latest?'ซิงก์ล่าสุด '+new Date(latest).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}):'';
