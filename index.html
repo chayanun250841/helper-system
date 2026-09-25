@@ -351,6 +351,36 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
 .reg-open{border:1px solid rgba(37,99,235,.22);background:rgba(37,99,235,.07);color:var(--accent);border-radius:7px;padding:6px 9px;cursor:pointer;font:700 11px 'Sarabun',sans-serif;white-space:nowrap;}
 .reg-empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px;}
 .reg-sync{font-size:10px;color:var(--text3);margin-left:auto;}
+/* ── SARABAN IN-APP VIEWER ── */
+.sv-bg{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:12000;display:none;align-items:stretch;justify-content:center;padding:18px;}
+.sv-bg.open{display:flex;}
+.sv-box{width:min(1380px,100%);height:calc(100vh - 36px);background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:0 20px 70px rgba(0,0,0,.45);display:flex;flex-direction:column;overflow:hidden;}
+.sv-head{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-bottom:1px solid var(--border);background:var(--panel2);flex-shrink:0;}
+.sv-head-main{min-width:0;flex:1;}
+.sv-title{font-size:15px;font-weight:800;color:var(--text);line-height:1.45;}
+.sv-meta{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.55;}
+.sv-head-actions{display:flex;gap:7px;align-items:center;flex-shrink:0;}
+.sv-btn{border:1px solid var(--border2);background:var(--bg2);color:var(--text2);border-radius:8px;padding:7px 10px;cursor:pointer;font:600 12px 'Sarabun',sans-serif;text-decoration:none;white-space:nowrap;}
+.sv-btn:hover{border-color:var(--accent);color:var(--accent);}
+.sv-close{width:34px;height:34px;border-radius:9px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:16px;}
+.sv-info{padding:10px 15px;border-bottom:1px solid var(--border);background:var(--panel);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px 14px;flex-shrink:0;}
+.sv-kv{font-size:11px;color:var(--text3);line-height:1.5;min-width:0;}
+.sv-kv b{display:block;font-size:12px;color:var(--text);font-weight:700;overflow:hidden;text-overflow:ellipsis;}
+.sv-summary{grid-column:1/-1;background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:8px 10px;white-space:pre-wrap;font-size:12px;color:var(--text2);line-height:1.65;}
+.sv-files{display:flex;gap:7px;padding:9px 12px;border-bottom:1px solid var(--border);overflow:auto;background:var(--panel2);flex-shrink:0;}
+.sv-file{border:1px solid var(--border);background:var(--bg2);color:var(--text2);border-radius:8px;padding:7px 10px;cursor:pointer;font:600 11px 'Sarabun',sans-serif;white-space:nowrap;}
+.sv-file.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.sv-main{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.55fr);gap:0;flex:1;min-height:0;}
+.sv-pdf{background:#525659;min-height:0;position:relative;}
+.sv-pdf iframe{width:100%;height:100%;border:0;background:#fff;}
+.sv-no-pdf{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;color:#e5e7eb;font-size:13px;line-height:1.7;}
+.sv-text{overflow:auto;padding:13px;background:var(--panel);}
+.sv-text-h{font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px;}
+.sv-page{border:1px solid var(--border);border-radius:9px;margin-bottom:8px;overflow:hidden;background:var(--bg2);}
+.sv-page summary{cursor:pointer;padding:8px 10px;font-size:11px;font-weight:700;color:var(--text2);}
+.sv-page pre{white-space:pre-wrap;word-break:break-word;margin:0;border-top:1px solid var(--border);padding:10px;font:11px/1.65 'Sarabun',sans-serif;color:var(--text2);background:var(--panel);}
+.sv-status{padding:30px;text-align:center;color:var(--text3);font-size:13px;}
+@media(max-width:800px){.sv-bg{padding:0}.sv-box{height:100vh;border-radius:0;border:0}.sv-head{padding:10px}.sv-head-actions .sv-btn{display:none}.sv-info{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px 10px}.sv-main{grid-template-columns:1fr;grid-template-rows:minmax(52vh,1fr) minmax(190px,.45fr)}.sv-text{border-top:1px solid var(--border)}}
 @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr);}.form-grid{grid-template-columns:1fr;}.fg.full{grid-column:span 1;}.hdr{flex-wrap:wrap;gap:8px;}.hdr-right{width:100%;justify-content:flex-end;}.ai-panel{width:calc(100vw - 16px);right:8px;}.auto-grid{grid-template-columns:1fr;}.auto-hd{align-items:flex-start;}.auto-hd-right{flex-shrink:0;}.reg-head{padding:13px 12px 9px}.reg-label{min-width:100%;}.reg-q{min-width:100%;max-width:none}.reg-row{gap:6px}.reg-seg{max-width:100%;overflow:auto}.reg-seg button{padding:7px 10px}.reg-table-wrap{max-height:65vh}.reg-title-row{align-items:flex-start}}
 </style>
 </head>
@@ -624,6 +654,23 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
   </div>
 </div>
 
+<!-- SARABAN IN-APP VIEWER -->
+<div class="sv-bg" id="sarabanViewer" onclick="if(event.target===this)closeSarabanDetail()">
+  <div class="sv-box">
+    <div class="sv-head">
+      <div class="sv-head-main">
+        <div class="sv-title" id="svTitle">กำลังโหลดหนังสือ...</div>
+        <div class="sv-meta" id="svMeta"></div>
+      </div>
+      <div class="sv-head-actions">
+        <a class="sv-btn" id="svEoffice" href="#" target="_blank" rel="noopener" style="display:none">↗ เปิดใน e-Office</a>
+        <button class="sv-close" type="button" onclick="closeSarabanDetail()">✕</button>
+      </div>
+    </div>
+    <div id="svContent" class="sv-status">กำลังโหลดรายละเอียด...</div>
+  </div>
+</div>
+
 <!-- LIGHTBOX -->
 <div class="lbox" id="lbox">
   <div class="lbox-toolbar">
@@ -865,7 +912,7 @@ function mkCard(t){
   }
   var acts=document.createElement('div');acts.className='card-acts';
   if(t.status==='active'){var ssel=document.createElement('select');ssel.className='status-sel';['กำลังดำเนินการ','รอผลตอบรับ','รอลายเซ็น/อนุมัติ'].forEach(function(s){var op=document.createElement('option');op.value=s;op.textContent=s;if(t.taskStatus===s)op.selected=true;ssel.appendChild(op);});ssel.onchange=function(){updateTaskDetailStatus(t.id,ssel.value);};acts.appendChild(ssel);}
-  if(isSaraban&&t.fileLink){var btnSrc=document.createElement('button');btnSrc.className='act a-edit';btnSrc.textContent='📖 ดูรายละเอียด / อ่านต้นฉบับ';btnSrc.onclick=function(){window.open(t.fileLink,'_blank','noopener');};acts.appendChild(btnSrc);}
+  if(isSaraban){var btnSrc=document.createElement('button');btnSrc.className='act a-edit';btnSrc.textContent='📖 ดูรายละเอียด / อ่านต้นฉบับ';btnSrc.onclick=function(){openSarabanDetail(t.id);};acts.appendChild(btnSrc);}
   var btnE=document.createElement('button');btnE.className='act a-edit';btnE.textContent='✏️ แก้ไข';btnE.onclick=function(){editTask(t.id);};
   var btnD=document.createElement('button');btnD.className='act a-del';btnD.textContent='🗑 ลบ';btnD.onclick=function(){delTask(t.id);};
   acts.appendChild(btnE);acts.appendChild(btnD);
@@ -977,9 +1024,71 @@ function regThaiDate(s){
   var mo=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return Number(p[2])+' '+mo[Number(p[1])-1]+' '+(Number(p[0])+543);
 }
+function sarabanId(v){
+  var m=String(v==null?'':v).match(/(?:sb-)?(\d+)$/);
+  return m?Number(m[1]):0;
+}
+function closeSarabanDetail(){
+  var v=document.getElementById('sarabanViewer');if(v)v.className='sv-bg';
+  var c=document.getElementById('svContent');if(c)c.innerHTML='';
+  document.body.style.overflow='';
+}
+function svSelectFile(fid){
+  document.querySelectorAll('.sv-file').forEach(function(b){b.classList.toggle('on',Number(b.dataset.fid)===Number(fid));});
+  var f=(window._svFiles||[]).find(function(x){return Number(x.filegroup_id)===Number(fid);});
+  var frame=document.getElementById('svPdfFrame'),empty=document.getElementById('svPdfEmpty');
+  if(!f||!f.public_url){if(frame)frame.style.display='none';if(empty){empty.style.display='flex';empty.innerHTML='ไฟล์นี้ยังไม่ได้ซิงก์ PDF เข้ามาใน Helper';}return;}
+  if(empty)empty.style.display='none';
+  if(frame){frame.style.display='block';frame.src=f.public_url+'#toolbar=1&navpanes=0&view=FitH';}
+}
+async function openSarabanDetail(value){
+  var id=sarabanId(value);if(!id){alert('ไม่พบรหัสหนังสือ');return;}
+  var modal=document.getElementById('sarabanViewer'),title=document.getElementById('svTitle'),meta=document.getElementById('svMeta'),content=document.getElementById('svContent');
+  modal.className='sv-bg open';document.body.style.overflow='hidden';
+  title.textContent='กำลังโหลดหนังสือ...';meta.textContent='เลขอ้างอิง '+id;content.className='sv-status';content.innerHTML='กำลังโหลดรายละเอียดและไฟล์ต้นฉบับ...';
+  try{
+    var ses=await getSupa().auth.getSession();
+    if(!ses.data||!ses.data.session)throw new Error('กรุณาลงชื่อเข้าใช้ Helper ก่อนอ่านหนังสือ');
+    var results=await Promise.all([
+      getSupa().from('saraban_registry').select('*').eq('detailsend_id',id).maybeSingle(),
+      getSupa().from('saraban_registry_files').select('*').eq('detailsend_id',id).order('file_order',{ascending:true}),
+      getSupa().from('saraban_registry_pages').select('*').eq('detailsend_id',id).order('filegroup_id',{ascending:true}).order('page_no',{ascending:true})
+    ]);
+    if(results[0].error)throw results[0].error;if(results[1].error)throw results[1].error;if(results[2].error)throw results[2].error;
+    var d=results[0].data||{},files=results[1].data||[],pages=results[2].data||[];
+    window._svFiles=files;
+    title.textContent=d.doc_header||'หนังสือรับ';
+    meta.textContent='เลขรับ '+(d.rec_no||'-')+' · '+(d.doc_no||'-')+' · รับ '+regThaiDate(d.received_date||d.received_at);
+    var eo=document.getElementById('svEoffice');if(d.source_url){eo.href=d.source_url;eo.style.display='inline-flex';}else eo.style.display='none';
+    var fileBtns=files.length?files.map(function(f,i){return '<button class="sv-file'+(i===0?' on':'')+'" data-fid="'+Number(f.filegroup_id)+'" onclick="svSelectFile('+Number(f.filegroup_id)+')">📄 '+esc(f.file_name||('ไฟล์ '+(i+1)))+(f.pages?' · '+f.pages+' หน้า':'')+'</button>';}).join(''):'<span style="font-size:11px;color:var(--text3)">ยังไม่มี PDF ที่ซิงก์เข้า Helper</span>';
+    var pageHtml=pages.length?pages.map(function(p){
+      var q=p.quality==null?'':(' · '+Math.round(Number(p.quality)*100)+'%');
+      return '<details class="sv-page"><summary>หน้า '+Number(p.page_no)+' · '+esc(p.source||'ข้อความ')+q+'</summary><pre>'+esc(p.content||'(ไม่มีข้อความ)')+'</pre></details>';
+    }).join(''):'<div style="font-size:11px;color:var(--text3)">ยังไม่มีข้อความที่สกัดจากไฟล์แนบ</div>';
+    var summary=d.summary_text||'';
+    content.className='';
+    content.innerHTML='<div class="sv-info">'+
+      '<div class="sv-kv">เลขรับ<b>'+esc(d.rec_no||'-')+'</b></div>'+
+      '<div class="sv-kv">เลขที่หนังสือ<b>'+esc(d.doc_no||'-')+'</b></div>'+
+      '<div class="sv-kv">จาก<b>'+esc(d.send_from||'-')+'</b></div>'+
+      '<div class="sv-kv">กลุ่มงาน<b>'+esc(d.org_area||d.areas||'-')+'</b></div>'+
+      '<div class="sv-kv">วันที่รับ<b>'+esc(regThaiDate(d.received_date||d.received_at))+'</b></div>'+
+      '<div class="sv-kv">สถานะ<b>'+esc(d.doc_rec_status||'-')+'</b></div>'+
+      '<div class="sv-kv">ชั้นความเร็ว<b>'+esc(d.speed_name||'-')+'</b></div>'+
+      '<div class="sv-kv">เรียน<b>'+esc(d.doc_dear||'-')+'</b></div>'+
+      (summary?'<div class="sv-summary"><b style="color:var(--text)">สรุปเนื้อหา</b>\n'+esc(summary)+'</div>':'')+
+      '</div>'+
+      '<div class="sv-files">'+fileBtns+'</div>'+
+      '<div class="sv-main"><div class="sv-pdf"><iframe id="svPdfFrame" title="หนังสือต้นฉบับ" style="display:none"></iframe><div class="sv-no-pdf" id="svPdfEmpty">ยังไม่มี PDF ที่ซิงก์เข้า Helper<br>รายละเอียดและข้อความที่อ่านได้จะแสดงด้านขวา</div></div>'+
+      '<div class="sv-text"><div class="sv-text-h">📝 เนื้อหาที่อ่านได้จากเอกสาร</div>'+pageHtml+'</div></div>';
+    if(files.length)svSelectFile(files[0].filegroup_id);
+  }catch(e){
+    title.textContent='เปิดรายละเอียดไม่สำเร็จ';meta.textContent='เลขอ้างอิง '+id;
+    content.className='sv-status';content.innerHTML='⚠️ '+esc(e.message||e);
+  }
+}
 function regOpen(id){
-  var r=registryRows.find(function(x){return Number(x.detailsend_id)===Number(id);});
-  if(r&&r.source_url)window.open(r.source_url,'_blank','noopener');
+  openSarabanDetail(id);
 }
 function rebuildRegistryAreas(){
   var sel=document.getElementById('regArea'),cur=sel.value;
@@ -1621,7 +1730,7 @@ function isSupaConfigured(){
           + '<div class="ib-b">'
           + '<button class="ib-ok" onclick="sbConfirm(\'' + t.id + '\')">✓ ยืนยัน เพิ่มเป็นภารกิจ</button>'
           + '<button class="ib-no" onclick="sbReject(\'' + t.id + '\')">✕ ไม่เกี่ยวกับผม</button>'
-          + (t.fileLink ? '<a class="ib-lk" href="' + t.fileLink + '" target="_blank" rel="noopener">🔎 ดูรายละเอียด / อ่านหนังสือต้นฉบับ ↗</a>' : '')
+          + '<button class="ib-lk" type="button" onclick="openSarabanDetail(\'' + t.id + '\')">🔎 ดูรายละเอียด / อ่านหนังสือต้นฉบับ</button>'
           + '</div></li>';
       });
       h += '</ul>';
