@@ -316,7 +316,42 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
 .auto-job:last-child{border-bottom:none;}
 .auto-job-name{font-size:12px;font-weight:600;color:var(--text);}
 .auto-job-meta{font-size:11px;color:var(--text3);text-align:right;white-space:nowrap;}
-@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr);}.form-grid{grid-template-columns:1fr;}.fg.full{grid-column:span 1;}.hdr{flex-wrap:wrap;gap:8px;}.hdr-right{width:100%;justify-content:flex-end;}.ai-panel{width:calc(100vw - 16px);right:8px;}.auto-grid{grid-template-columns:1fr;}.auto-hd{align-items:flex-start;}.auto-hd-right{flex-shrink:0;}}
+/* ── SARABAN REGISTRY ── */
+.reg-wrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+.reg-head{padding:16px 18px 10px;border-bottom:1px solid var(--border);}
+.reg-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px;}
+.reg-title{font-size:16px;font-weight:800;color:var(--text);}
+.reg-sub{font-size:11px;color:var(--text3);margin-top:3px;}
+.reg-count{font-size:12px;font-weight:700;color:var(--accent);background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.18);padding:5px 10px;border-radius:999px;white-space:nowrap;}
+.reg-filters{display:flex;flex-direction:column;gap:9px;}
+.reg-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.reg-label{font-size:12px;font-weight:700;color:var(--text3);min-width:78px;}
+.reg-seg{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--bg2);}
+.reg-seg button{border:0;border-right:1px solid var(--border);background:transparent;color:var(--text2);padding:7px 13px;font:600 12px 'Sarabun',sans-serif;cursor:pointer;}
+.reg-seg button:last-child{border-right:0;}
+.reg-seg button.on{background:var(--accent);color:#fff;}
+.reg-inp,.reg-sel{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font:13px 'Sarabun',sans-serif;outline:none;}
+.reg-inp:focus,.reg-sel:focus{border-color:var(--accent);}
+.reg-q{min-width:240px;flex:1;max-width:420px;}
+.reg-check{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);white-space:nowrap;}
+.reg-reset,.reg-refresh{background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;padding:7px 11px;cursor:pointer;font:600 12px 'Sarabun',sans-serif;}
+.reg-table-wrap{overflow:auto;max-height:68vh;}
+.reg-table{width:100%;min-width:980px;border-collapse:collapse;}
+.reg-table th{position:sticky;top:0;z-index:2;background:var(--panel2);color:var(--text3);font-size:11px;text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);}
+.reg-table td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top;font-size:12px;color:var(--text2);}
+.reg-table tr:hover td{background:rgba(37,99,235,.035);}
+.reg-no{font-weight:700;color:var(--text);}
+.reg-date{white-space:nowrap;color:var(--text3);}
+.reg-subject{font-size:13px;font-weight:700;color:var(--text);line-height:1.45;}
+.reg-summary{font-size:11px;color:var(--text3);line-height:1.5;margin-top:4px;max-width:620px;}
+.reg-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+.reg-tag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--bg2);border:1px solid var(--border);color:var(--text3);}
+.reg-tag.mine{color:var(--green);border-color:rgba(5,150,105,.25);background:rgba(5,150,105,.07);}
+.reg-tag.urg{color:var(--red);border-color:rgba(220,38,38,.25);background:rgba(220,38,38,.06);}
+.reg-open{border:1px solid rgba(37,99,235,.22);background:rgba(37,99,235,.07);color:var(--accent);border-radius:7px;padding:6px 9px;cursor:pointer;font:700 11px 'Sarabun',sans-serif;white-space:nowrap;}
+.reg-empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px;}
+.reg-sync{font-size:10px;color:var(--text3);margin-left:auto;}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr);}.form-grid{grid-template-columns:1fr;}.fg.full{grid-column:span 1;}.hdr{flex-wrap:wrap;gap:8px;}.hdr-right{width:100%;justify-content:flex-end;}.ai-panel{width:calc(100vw - 16px);right:8px;}.auto-grid{grid-template-columns:1fr;}.auto-hd{align-items:flex-start;}.auto-hd-right{flex-shrink:0;}.reg-head{padding:13px 12px 9px}.reg-label{min-width:100%;}.reg-q{min-width:100%;max-width:none}.reg-row{gap:6px}.reg-seg{max-width:100%;overflow:auto}.reg-seg button{padding:7px 10px}.reg-table-wrap{max-height:65vh}.reg-title-row{align-items:flex-start}}
 </style>
 </head>
 <body>
@@ -413,6 +448,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
 <div class="view-bar">
   <button class="vbtn on" id="btnList" onclick="switchView('list')">📋 รายการ</button>
   <button class="vbtn" id="btnCal" onclick="switchView('cal')">📅 ปฏิทิน</button>
+  <button class="vbtn" id="btnRegistry" onclick="switchView('registry')">📨 ทะเบียนงาน</button>
   <div style="width:1px;background:var(--border);margin:0 2px;"></div>
   <button class="vbtn on" id="btnAll" onclick="switchSpace('all')">🌐 ทั้งหมด</button>
   <button class="vbtn" id="btnWork" onclick="switchSpace('work')">💼 งาน</button>
@@ -420,7 +456,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
   <button class="vbtn-add" id="addBtn" onclick="toggleForm()">+ เพิ่ม</button>
 </div>
 
-<div class="quick-wrap">
+<div class="quick-wrap" id="quickWrap">
   <span class="quick-lbl">⚡ บันทึกด่วน</span>
   <input class="quick-inp" id="quickInp" placeholder="พิมพ์ชื่องานแล้วกด Enter">
   <button class="quick-go" onclick="quickCapture()">บันทึก</button>
@@ -536,6 +572,58 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
   <div class="cal-det" id="calDet"><div class="cal-det-hd" id="calDetHd"></div><div id="calDetItems"></div></div>
 </div>
 
+
+<!-- SARABAN REGISTRY VIEW -->
+<div id="registryView" style="display:none;">
+  <div class="reg-wrap">
+    <div class="reg-head">
+      <div class="reg-title-row">
+        <div>
+          <div class="reg-title">📨 ทะเบียนงาน / หนังสือเข้า</div>
+          <div class="reg-sub">ข้อมูลจากระบบสารบรรณ สสอ.เขาค้อ · เปิดต้นฉบับได้จากหน้านี้</div>
+        </div>
+        <div class="reg-count" id="regCount">กำลังโหลด...</div>
+      </div>
+      <div class="reg-filters">
+        <div class="reg-row">
+          <span class="reg-label">ดูงาน</span>
+          <div class="reg-seg">
+            <button type="button" class="on" id="regScopeAll" onclick="regSetScope('all')">ทุกงานในสำนักงาน</button>
+            <button type="button" id="regScopeMine" onclick="regSetScope('mine')">เฉพาะงานที่ผมรับผิดชอบ</button>
+          </div>
+        </div>
+        <div class="reg-row">
+          <span class="reg-label">ช่วงเวลา</span>
+          <div class="reg-seg" id="regRanges">
+            <button type="button" onclick="regSetRange(7,this)">7 วัน</button>
+            <button type="button" class="on" onclick="regSetRange(30,this)">30 วัน</button>
+            <button type="button" onclick="regSetRange(90,this)">90 วัน</button>
+            <button type="button" onclick="regSetRange(0,this)">ทั้งหมด</button>
+          </div>
+          <input class="reg-inp" type="date" id="regStart" onchange="regRangeCustom()">
+          <span style="font-size:12px;color:var(--text3)">ถึง</span>
+          <input class="reg-inp" type="date" id="regStop" onchange="regRangeCustom()">
+        </div>
+        <div class="reg-row">
+          <span class="reg-label">กรอง</span>
+          <select class="reg-sel" id="regArea" onchange="renderRegistry()"><option value="">— ทุกกลุ่มงาน —</option></select>
+          <input class="reg-inp reg-q" id="regQ" placeholder="ค้นชื่อเรื่อง เลขหนังสือ เลขรับ หรือหน่วยงาน" oninput="renderRegistry()">
+          <label class="reg-check"><input type="checkbox" id="regUrgent" onchange="renderRegistry()"> เฉพาะด่วน</label>
+          <button class="reg-reset" type="button" onclick="regReset()">ล้างตัวกรอง</button>
+          <button class="reg-refresh" type="button" onclick="loadRegistry(true)">↻ รีเฟรช</button>
+          <span class="reg-sync" id="regSync"></span>
+        </div>
+      </div>
+    </div>
+    <div class="reg-table-wrap">
+      <table class="reg-table">
+        <thead><tr><th style="width:70px">เลขรับ</th><th style="width:96px">วันที่รับ</th><th>เรื่อง / สรุปเนื้อหา</th><th style="width:175px">จาก</th><th style="width:145px">งาน</th><th style="width:92px">ไฟล์</th></tr></thead>
+        <tbody id="regBody"><tr><td colspan="6" class="reg-empty">เลือกเมนูทะเบียนงานเพื่อโหลดข้อมูล</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX -->
 <div class="lbox" id="lbox">
   <div class="lbox-toolbar">
@@ -639,6 +727,7 @@ function getSupa() {
 
 // ════════ STATE ════════
 var tasks=[],editId=null,imgs=[],fileNames=[],fGroup='all',fQ='',fSort='deadline',view='list',formOpen=false,calY,calM,calSel=null,activeSpace='all',currentFormSpace='work';
+var registryRows=[],registryLoaded=false,registryScope='all';
 var TMONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 var TDAYS=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 var DLABELS=[{t:'จ'},{t:'อ'},{t:'พ'},{t:'พฤ'},{t:'ศ'},{t:'ส',w:1},{t:'อา',w:1}];
@@ -655,6 +744,7 @@ window.onload=function(){
   });
   var saved=localStorage.getItem('helperTheme');if(saved)setTheme(saved);
   setFormSpace('work');
+  initRegistryFilters();
   showLoad();
   supaLoadTasks();
 };
@@ -693,7 +783,7 @@ function statusB(ts,status){
   return'<span class="bdg bdg-active">⚙️ ดำเนินการ</span>';
 }
 
-function render(){updateStats();applyF();if(view==='cal')renderCal();}
+function render(){updateStats();applyF();if(view==='cal')renderCal();if(view==='registry')renderRegistry();}
 function updateStats(){
   var act=tasks.filter(function(t){return t.status==='active';});
   document.getElementById('sAll').textContent=tasks.length;
@@ -787,7 +877,20 @@ function mkCard(t){
 function toggleChecklist(id,idx,checked){var t=tasks.find(function(x){return x.id===id;});if(!t||!t.checklist)return;var items=t.checklist.split('|');var txt=items[idx].replace(/^\[x\]/,'').replace(/^\[\]/,'').trim();items[idx]=(checked?'[x]':'[]')+txt;t.checklist=items.join('|');var td=JSON.parse(JSON.stringify(t));td.imageUrls=[];gasCall(td,function(res){tasks=res||tasks;render();});}
 function updateTaskDetailStatus(id,ns){var t=tasks.find(function(x){return x.id===id;});if(!t)return;t.taskStatus=ns;var td=JSON.parse(JSON.stringify(t));td.imageUrls=[];gasCall(td,function(res){tasks=res||tasks;render();});}
 
-function switchView(v){view=v;document.getElementById('listView').style.display=v==='list'?'block':'none';document.getElementById('calView').style.display=v==='cal'?'block':'none';document.getElementById('btnList').className='vbtn'+(v==='list'?' on':'');document.getElementById('btnCal').className='vbtn'+(v==='cal'?' on':'');if(v==='cal')renderCal();}
+function switchView(v){
+  view=v;
+  document.getElementById('listView').style.display=v==='list'?'block':'none';
+  document.getElementById('calView').style.display=v==='cal'?'block':'none';
+  document.getElementById('registryView').style.display=v==='registry'?'block':'none';
+  document.getElementById('btnList').className='vbtn'+(v==='list'?' on':'');
+  document.getElementById('btnCal').className='vbtn'+(v==='cal'?' on':'');
+  document.getElementById('btnRegistry').className='vbtn'+(v==='registry'?' on':'');
+  ['btnAll','btnWork','btnPersonal','addBtn'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=v==='registry'?'none':'';});
+  var qw=document.getElementById('quickWrap');if(qw)qw.style.display=v==='registry'?'none':'';
+  var fp=document.getElementById('formPanel');if(fp)fp.style.display=v==='registry'?'none':'';
+  if(v==='cal')renderCal();
+  if(v==='registry')loadRegistry(false);
+}
 function switchSpace(s){activeSpace=s;var btns={all:'btnAll',work:'btnWork',personal:'btnPersonal'};Object.keys(btns).forEach(function(k){var cl='vbtn'+(k==='personal'?' personal':'');document.getElementById(btns[k]).className=cl+(activeSpace===k?' on':'');});applyF();if(view==='cal')renderCal();}
 
 var WORK_GROUPS=[{v:'งานพัฒนาคุณภาพ (PMQA)',l:'PMQA'},{v:'งานพัฒนาระบบข้อมูลฯ (IT)',l:'IT'},{v:'งานอุบัติเหตุ',l:'งานอุบัติเหตุ'},{v:'งานคุ้มครองผู้บริโภคฯ',l:'คุ้มครองผู้บริโภคฯ'},{v:'ปฐมภูมิและสุขภาพภาคประชาชน',l:'ปฐมภูมิ/สุขภาพภาคประชาชน'},{v:'ประกันสุขภาพ',l:'ประกันสุขภาพ'},{v:'รายงานสถิติ ตัวชี้วัด KPI',l:'สถิติ / KPI'},{v:'งานสิ่งแวดล้อม ENV',l:'สิ่งแวดล้อม ENV'},{v:'อื่นๆ (งาน)',l:'อื่นๆ'}];
@@ -844,6 +947,105 @@ function editTask(id){
   editId=t.id;document.getElementById('saveBtn').textContent='อัปเดตภารกิจ';document.getElementById('cancelBtn').style.display='block';window.scrollTo({top:0,behavior:'smooth'});
 }
 function cancelEdit(){editId=null;imgs=[];fileNames=[];renderPrev();setFormSpace('work');document.getElementById('taskForm').reset();document.getElementById('saveBtn').textContent='บันทึกภารกิจ';document.getElementById('cancelBtn').style.display='none';}
+
+// ════════ SARABAN REGISTRY ════════
+function localIsoDate(d){var y=d.getFullYear(),m=('0'+(d.getMonth()+1)).slice(-2),day=('0'+d.getDate()).slice(-2);return y+'-'+m+'-'+day;}
+function initRegistryFilters(){
+  var stop=new Date(),start=new Date();start.setDate(stop.getDate()-30);
+  document.getElementById('regStart').value=localIsoDate(start);
+  document.getElementById('regStop').value=localIsoDate(stop);
+}
+function regSetScope(scope){
+  registryScope=scope==='mine'?'mine':'all';
+  document.getElementById('regScopeAll').className=registryScope==='all'?'on':'';
+  document.getElementById('regScopeMine').className=registryScope==='mine'?'on':'';
+  renderRegistry();
+}
+function regSetRange(days,btn){
+  document.querySelectorAll('#regRanges button').forEach(function(b){b.className='';});if(btn)btn.className='on';
+  if(!days){document.getElementById('regStart').value='';document.getElementById('regStop').value='';}
+  else{var stop=new Date(),start=new Date();start.setDate(stop.getDate()-days);document.getElementById('regStart').value=localIsoDate(start);document.getElementById('regStop').value=localIsoDate(stop);}
+  renderRegistry();
+}
+function regRangeCustom(){document.querySelectorAll('#regRanges button').forEach(function(b){b.className='';});renderRegistry();}
+function regReset(){
+  document.getElementById('regArea').value='';document.getElementById('regQ').value='';document.getElementById('regUrgent').checked=false;
+  regSetScope('all');var b=document.querySelectorAll('#regRanges button')[1];regSetRange(30,b);
+}
+function regThaiDate(s){
+  if(!s)return'-';var p=String(s).slice(0,10).split('-');if(p.length!==3)return esc(s);
+  var mo=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return Number(p[2])+' '+mo[Number(p[1])-1]+' '+(Number(p[0])+543);
+}
+function regOpen(id){
+  var r=registryRows.find(function(x){return Number(x.detailsend_id)===Number(id);});
+  if(r&&r.source_url)window.open(r.source_url,'_blank','noopener');
+}
+function rebuildRegistryAreas(){
+  var sel=document.getElementById('regArea'),cur=sel.value;
+  var vals=Array.from(new Set(registryRows.map(function(r){return r.org_area||'';}).filter(Boolean))).sort(function(a,b){return a.localeCompare(b,'th');});
+  sel.innerHTML='<option value="">— ทุกกลุ่มงาน —</option>'+vals.map(function(v){return'<option value="'+v.replace(/"/g,'&quot;')+'">'+esc(v)+'</option>';}).join('');
+  if(vals.indexOf(cur)>=0)sel.value=cur;
+}
+async function loadRegistry(force){
+  if(registryLoaded&&!force){renderRegistry();return;}
+  var body=document.getElementById('regBody'),cnt=document.getElementById('regCount');
+  body.innerHTML='<tr><td colspan="6" class="reg-empty">กำลังโหลดทะเบียนงาน...</td></tr>';cnt.textContent='กำลังโหลด...';
+  try{
+    var ses=await getSupa().auth.getSession();
+    if(!ses.data||!ses.data.session){
+      body.innerHTML='<tr><td colspan="6" class="reg-empty">🔐 กรุณาลงชื่อเข้าใช้ Helper ก่อนดูทะเบียนงาน</td></tr>';cnt.textContent='ต้องเข้าสู่ระบบ';return;
+    }
+    var res=await getSupa().from('saraban_registry')
+      .select('detailsend_id,doc_id,rec_no,doc_no,doc_header,send_from,doc_dear,received_at,received_date,speed_name,doc_rec_status,areas,mine,org_area,nfiles,summary_text,deadline,when_text,where_text,source_url,synced_at')
+      .order('received_date',{ascending:false,nullsFirst:false})
+      .order('detailsend_id',{ascending:false})
+      .limit(3000);
+    if(res.error)throw res.error;
+    registryRows=res.data||[];registryLoaded=true;rebuildRegistryAreas();renderRegistry();
+  }catch(e){
+    body.innerHTML='<tr><td colspan="6" class="reg-empty">โหลดทะเบียนงานไม่สำเร็จ: '+esc(e.message||e)+'</td></tr>';cnt.textContent='ผิดพลาด';
+  }
+}
+function renderRegistry(){
+  if(!registryLoaded)return;
+  var start=document.getElementById('regStart').value,stop=document.getElementById('regStop').value;
+  var area=document.getElementById('regArea').value,q=(document.getElementById('regQ').value||'').trim().toLowerCase();
+  var urgent=document.getElementById('regUrgent').checked;
+  var rows=registryRows.filter(function(r){
+    var d=r.received_date||String(r.received_at||'').slice(0,10);
+    if(start&&d<start)return false;if(stop&&d>stop)return false;
+    if(registryScope==='mine'&&!r.mine)return false;if(area&&(r.org_area||'')!==area)return false;
+    if(urgent&&String((r.speed_name||'')+' '+(r.doc_header||'')).indexOf('ด่วน')<0)return false;
+    if(q){var hay=[r.rec_no,r.doc_no,r.doc_header,r.send_from,r.org_area,r.areas,r.summary_text].join(' ').toLowerCase();if(hay.indexOf(q)<0)return false;}
+    return true;
+  });
+  document.getElementById('regCount').textContent=rows.length+' ฉบับ';
+  var latest=registryRows.reduce(function(a,r){return(!a||String(r.synced_at||'')>a)?String(r.synced_at||''):a;},'');
+  document.getElementById('regSync').textContent=latest?'ซิงก์ล่าสุด '+new Date(latest).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}):'';
+  var body=document.getElementById('regBody');
+  if(!rows.length){body.innerHTML='<tr><td colspan="6" class="reg-empty">ไม่พบหนังสือตามตัวกรอง</td></tr>';return;}
+  body.innerHTML=rows.map(function(r){
+    var isUrg=String((r.speed_name||'')+' '+(r.doc_header||'')).indexOf('ด่วน')>=0;
+    var summary=r.summary_text||'',tags='';
+    if(r.mine)tags+='<span class="reg-tag mine">งานของคุณ</span>';
+    if(isUrg)tags+='<span class="reg-tag urg">ด่วน</span>';
+    if(r.deadline)tags+='<span class="reg-tag">กำหนด '+esc(r.deadline)+'</span>';
+    if(r.doc_no)tags+='<span class="reg-tag">'+esc(r.doc_no)+'</span>';
+    var group=r.org_area||((r.areas||'').split('|')[0])||'ยังไม่จัดหมวด';
+    return '<tr>'+
+      '<td><div class="reg-no">'+esc(r.rec_no||'-')+'</div></td>'+
+      '<td><div class="reg-date">'+regThaiDate(r.received_date||r.received_at)+'</div></td>'+
+      '<td><div class="reg-subject">'+esc(r.doc_header||'(ไม่มีชื่อเรื่อง)')+'</div>'+
+        (summary?'<div class="reg-summary">'+esc(summary)+'</div>':'')+
+        '<div class="reg-tags">'+tags+'</div></td>'+
+      '<td>'+esc(r.send_from||'-')+'</td>'+
+      '<td><span class="reg-tag'+(r.mine?' mine':'')+'">'+esc(group)+'</span></td>'+
+      '<td><button class="reg-open" type="button" onclick="regOpen('+Number(r.detailsend_id)+')">📄 ต้นฉบับ</button>'+
+        (Number(r.nfiles||0)>0?'<div style="font-size:10px;color:var(--text3);margin-top:4px;text-align:center">'+Number(r.nfiles)+' ไฟล์</div>':'')+
+      '</td></tr>';
+  }).join('');
+}
 
 // ════════ SUPABASE DATA LAYER ════════
 
