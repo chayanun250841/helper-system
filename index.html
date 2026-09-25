@@ -728,7 +728,7 @@ function renderTasks(){
 }
 
 function mkCard(t){
-  var urg=isUrg(t.dueDate)||isOver(t.dueDate),isP=t.space==='personal';
+  var urg=isUrg(t.dueDate)||isOver(t.dueDate),isP=t.space==='personal',isSaraban=/^sb-\d+$/.test(String(t.id||''));
   var cls='task-card'+(t.status==='completed'?' cd':'')+(urg&&t.status!=='completed'?' cu':'')+(isP?' personal-card':'');
   var li=document.createElement('li');li.className=cls;
   var cb=document.createElement('input');cb.type='checkbox';cb.className='task-cb';if(t.status==='completed')cb.checked=true;
@@ -775,6 +775,7 @@ function mkCard(t){
   }
   var acts=document.createElement('div');acts.className='card-acts';
   if(t.status==='active'){var ssel=document.createElement('select');ssel.className='status-sel';['กำลังดำเนินการ','รอผลตอบรับ','รอลายเซ็น/อนุมัติ'].forEach(function(s){var op=document.createElement('option');op.value=s;op.textContent=s;if(t.taskStatus===s)op.selected=true;ssel.appendChild(op);});ssel.onchange=function(){updateTaskDetailStatus(t.id,ssel.value);};acts.appendChild(ssel);}
+  if(isSaraban&&t.fileLink){var btnSrc=document.createElement('button');btnSrc.className='act a-edit';btnSrc.textContent='📖 ดูรายละเอียด / อ่านต้นฉบับ';btnSrc.onclick=function(){window.open(t.fileLink,'_blank','noopener');};acts.appendChild(btnSrc);}
   var btnE=document.createElement('button');btnE.className='act a-edit';btnE.textContent='✏️ แก้ไข';btnE.onclick=function(){editTask(t.id);};
   var btnD=document.createElement('button');btnD.className='act a-del';btnD.textContent='🗑 ลบ';btnD.onclick=function(){delTask(t.id);};
   acts.appendChild(btnE);acts.appendChild(btnD);
@@ -1413,7 +1414,7 @@ function isSupaConfigured(){
           + '<div class="ib-b">'
           + '<button class="ib-ok" onclick="sbConfirm(\'' + t.id + '\')">✓ ยืนยัน เพิ่มเป็นภารกิจ</button>'
           + '<button class="ib-no" onclick="sbReject(\'' + t.id + '\')">✕ ไม่เกี่ยวกับผม</button>'
-          + (t.fileLink ? '<a class="ib-lk" href="' + t.fileLink + '" target="_blank">เปิดหนังสือต้นฉบับ ↗</a>' : '')
+          + (t.fileLink ? '<a class="ib-lk" href="' + t.fileLink + '" target="_blank" rel="noopener">🔎 ดูรายละเอียด / อ่านหนังสือต้นฉบับ ↗</a>' : '')
           + '</div></li>';
       });
       h += '</ul>';
