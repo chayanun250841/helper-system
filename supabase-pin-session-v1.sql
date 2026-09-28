@@ -203,12 +203,155 @@ begin
 end;
 $$;
 
+create or replace function public.helper_task_upsert(p_token text,p_task jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  owner uuid;
+  row_out public.tasks%rowtype;
+begin
+  if not public.helper_check_session(p_token) then
+    raise exception 'helper session expired' using errcode='42501';
+  end if;
+  owner := public.helper_owner_id();
+  if owner is null then
+    raise exception 'helper owner is not configured' using errcode='42501';
+  end if;
+
+  insert into public.tasks(
+    id,owner_id,work_group,doc_no,title,due_date,start_date,priority,task_status,
+    meeting_link,file_link,image_urls,checklist,details,space,status
+  )
+  values(
+    p_task->>'id',
+    owner,
+    coalesce(p_task->>'work_group',''),
+    coalesce(p_task->>'doc_no',''),
+    coalesce(p_task->>'title',''),
+    nullif(p_task->>'due_date','')::date,
+    nullif(p_task->>'start_date','')::date,
+    coalesce(nullif(p_task->>'priority',''),'med'),
+    coalesce(nullif(p_task->>'task_status',''),'กำลังดำเนินการ'),
+    coalesce(p_task->>'meeting_link',''),
+    coalesce(p_task->>'file_link',''),
+    coalesce(p_task->>'image_urls',''),
+    coalesce(p_task->>'checklist',''),
+    coalesce(p_task->>'details',''),
+    coalesce(nullif(p_task->>'space',''),'work'),
+    coalesce(nullif(p_task->>'status',''),'active')
+  )
+  on conflict(id) do update set
+    owner_id=owner,
+    work_group=excluded.work_group,
+    doc_no=excluded.doc_no,
+    title=excluded.title,
+    due_date=excluded.due_date,
+    start_date=excluded.start_date,
+    priority=excluded.priority,
+    task_status=excluded.task_status,
+    meeting_link=excluded.meeting_link,
+    file_link=excluded.file_link,
+    image_urls=excluded.image_urls,
+    checklist=excluded.checklist,
+    details=excluded.details,
+    space=excluded.space,
+    status=excluded.status
+  where public.tasks.owner_id=owner
+  returning * into row_out;
+
+  if row_out.id is null then
+    raise exception 'task is not owned by Helper owner' using errcode='42501';
+  end if;
+  return to_jsonb(row_out)-'owner_id';
+end;
+$$;
+
+create or replace function public.helper_task_set_status(
+  p_token text,p_id text,p_status text,p_image_urls text default null
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  owner uuid;
+begin
+  if not public.helper_check_session(p_token) then
+    raise exception 'helper session expired' using errcode='42501';
+  end if;
+  owner := public.helper_owner_id();
+  update public.tasks
+     set status=p_status,
+         image_urls=case when p_image_urls is null then image_urls else p_image_urls end
+   where id=p_id and owner_id=owner;
+  return found;
+end;
+$$;
+
+create or replace function public.helper_task_delete(p_token text,p_id text)
+returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  owner uuid;
+begin
+  if not public.helper_check_session(p_token) then
+    raise exception 'helper session expired' using errcode='42501';
+  end if;
+  owner := public.helper_owner_id();
+  delete from public.tasks where id=p_id and owner_id=owner;
+  return found;
+end;
+$$;
+
+create or replace function public.helper_manual_job_request(
+  p_token text,p_request_id uuid,p_requested_at timestamptz
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  owner uuid;
+  result jsonb;
+begin
+  if not public.helper_check_session(p_token) then
+    raise exception 'helper session expired' using errcode='42501';
+  end if;
+  owner := public.helper_owner_id();
+  update public.automation_jobs
+     set manual_request_id=p_request_id,
+         manual_requested_at=p_requested_at,
+         updated_at=now()
+   where owner_id=owner
+     and workflow_key='morning-document-registry'
+     and enabled=true
+  returning jsonb_build_object(
+    'id',id,
+    'manual_request_id',manual_request_id,
+    'manual_requested_at',manual_requested_at
+  ) into result;
+  return result;
+end;
+$$;
+
 revoke all on function public.helper_owner_id() from public;
 revoke all on function public.helper_session_valid() from public;
 revoke all on function public.helper_check_session(text) from public;
 revoke all on function public.helper_unlock(text) from public;
 revoke all on function public.helper_lock(text) from public;
 revoke all on function public.helper_change_pin(text,text) from public;
+revoke all on function public.helper_task_upsert(text,jsonb) from public;
+revoke all on function public.helper_task_set_status(text,text,text,text) from public;
+revoke all on function public.helper_task_delete(text,text) from public;
+revoke all on function public.helper_manual_job_request(text,uuid,timestamptz) from public;
 
 grant execute on function public.helper_owner_id() to anon, authenticated;
 grant execute on function public.helper_session_valid() to anon, authenticated;
@@ -216,6 +359,10 @@ grant execute on function public.helper_check_session(text) to anon, authenticat
 grant execute on function public.helper_unlock(text) to anon, authenticated;
 grant execute on function public.helper_lock(text) to anon, authenticated;
 grant execute on function public.helper_change_pin(text,text) to anon, authenticated;
+grant execute on function public.helper_task_upsert(text,jsonb) to anon, authenticated;
+grant execute on function public.helper_task_set_status(text,text,text,text) to anon, authenticated;
+grant execute on function public.helper_task_delete(text,text) to anon, authenticated;
+grant execute on function public.helper_manual_job_request(text,uuid,timestamptz) to anon, authenticated;
 
 -- tasks: PIN session gets the same CRUD scope as the owner UI.
 alter table public.tasks alter column owner_id set default public.helper_owner_id();
