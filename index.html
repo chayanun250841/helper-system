@@ -402,23 +402,22 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
   </div>
 </div>
 
-<!-- AUTH MODAL -->
+<!-- PIN ACCESS MODAL -->
 <div class="modal-bg" id="authModal" style="z-index:10001;">
   <div class="modal" style="max-width:430px;">
-    <div class="modal-title">🔐 บัญชี Helper System</div>
+    <div class="modal-title">🔐 เข้าใช้ Helper System</div>
     <div id="authSignedOut">
-      <input class="auth-inp" id="authEmail" type="email" inputmode="email" autocomplete="email" placeholder="อีเมลสำหรับรับลิงก์เข้าสู่ระบบ">
-      <div class="auth-note">ระบบจะส่ง Magic Link ผ่าน Supabase Auth เมื่อเราเปิด Security migration จริง ปัจจุบันเตรียมหน้า Login ไว้ก่อนและยังไม่บังคับล็อกอิน</div>
+      <input class="auth-inp" id="authPin" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" name="helper-pin-code" data-lpignore="true" data-form-type="other" placeholder="กรอก PIN 6 หลัก">
+      <div class="auth-note">ใช้ PIN สำหรับเข้าใช้งานบนอุปกรณ์นี้ ระบบจะจำสถานะไว้ 30 วันเพื่อลดขั้นตอนการเข้าสู่ระบบ</div>
       <div class="auth-msg" id="authMsg"></div>
       <div class="modal-btns">
-        <button class="auth-primary" id="authSendBtn" type="button" onclick="sendAuthLink()">ส่งลิงก์เข้าสู่ระบบ</button>
-        <button class="btn-close" type="button" onclick="closeAuthModal()">ปิด</button>
+        <button class="auth-primary" id="authSendBtn" type="button" onclick="submitHelperPin()">เข้าใช้งาน</button>
       </div>
     </div>
     <div id="authSignedIn" style="display:none;">
       <div class="export-text" id="authAccountText" style="max-height:none;"></div>
       <div class="modal-btns">
-        <button class="btn-copy" type="button" onclick="helperSignOut()">ออกจากระบบ</button>
+        <button class="btn-copy" type="button" onclick="helperSignOut()">ล็อกระบบ</button>
         <button class="btn-close" type="button" onclick="closeAuthModal()">ปิด</button>
       </div>
     </div>
@@ -432,7 +431,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
     <div class="hdr-sub">สำนักงานสาธารณสุขอำเภอเขาค้อ จ.เพชรบูรณ์</div>
   </div>
   <div class="hdr-right">
-    <button class="auth-btn" id="authBtn" onclick="openAuthModal()">🔐 เข้าสู่ระบบ</button>
+    <button class="auth-btn" id="authBtn" onclick="openAuthModal()">🔐 PIN</button>
     <button class="export-btn" onclick="openExport()">📊 สรุปเดือนนี้</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">☀️ สว่าง</button>
   </div>
@@ -558,7 +557,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
 <div id="listView">
   <div class="search-wrap">
     <div class="search-row">
-      <input class="s-inp" id="searchInp" placeholder="🔍 ค้นหา..." oninput="applyF()">
+      <input class="s-inp" id="searchInp" type="search" name="helper-task-filter" autocomplete="off" data-lpignore="true" data-form-type="other" placeholder="🔍 ค้นหา..." oninput="applyF()">
       <select class="s-sel" id="sortSel" onchange="applyF()">
         <option value="deadline">เรียง: กำหนดส่ง</option>
         <option value="priority">เรียง: ความสำคัญ</option>
@@ -798,7 +797,8 @@ window.onload=function(){
   setFormSpace('work');
   initRegistryFilters();
   showLoad();
-  supaLoadTasks();
+  if(window.isHelperUnlocked&&window.isHelperUnlocked())supaLoadTasks();
+  else{hideLoad();setTimeout(function(){if(window.openAuthModal)window.openAuthModal();},0);}
 };
 
 function toggleTheme(){var c=document.documentElement.getAttribute('data-theme');setTheme(c==='dark'?'light':'dark');}
@@ -1090,8 +1090,8 @@ async function regWatchPull(requestId,requestedAt){
 async function regPullNow(){
   if(typeof getSupa!=='function'||!isSupaConfigured()){alert('Supabase ยังไม่พร้อม');return;}
   try{
-    var supa=getSupa(),ses=await supa.auth.getSession();
-    if(!ses.data||!ses.data.session){if(typeof openAuthModal==='function')openAuthModal();else alert('กรุณาเข้าสู่ระบบ Helper ก่อน');return;}
+    if(!window.isHelperUnlocked||!window.isHelperUnlocked()){if(typeof openAuthModal==='function')openAuthModal();else alert('กรุณากรอก PIN Helper ก่อน');return;}
+    var supa=getSupa();
     var existing=await supa.from('automation_jobs')
       .select('manual_request_id,manual_requested_at')
       .eq('workflow_key','morning-document-registry').maybeSingle();
@@ -1123,7 +1123,7 @@ async function regPullNow(){
 async function regResumePendingPull(){
   try{
     if(typeof getSupa!=='function'||!isSupaConfigured())return;
-    var ses=await getSupa().auth.getSession();if(!ses.data||!ses.data.session)return;
+    if(!window.isHelperUnlocked||!window.isHelperUnlocked())return;
     var r=await getSupa().from('automation_jobs').select('manual_request_id,manual_requested_at')
       .eq('workflow_key','morning-document-registry').maybeSingle();
     if(r.data&&r.data.manual_request_id){
@@ -1161,8 +1161,7 @@ async function openSarabanDetail(value){
   modal.className='sv-bg open';document.body.style.overflow='hidden';
   title.textContent='กำลังโหลดหนังสือ...';meta.textContent='เลขอ้างอิง '+id;content.className='sv-status';content.innerHTML='กำลังโหลดรายละเอียดและไฟล์ต้นฉบับ...';
   try{
-    var ses=await getSupa().auth.getSession();
-    if(!ses.data||!ses.data.session)throw new Error('กรุณาลงชื่อเข้าใช้ Helper ก่อนอ่านหนังสือ');
+    if(!window.isHelperUnlocked||!window.isHelperUnlocked())throw new Error('กรุณากรอก PIN Helper ก่อนอ่านหนังสือ');
     var results=await Promise.all([
       getSupa().from('saraban_registry').select('*').eq('detailsend_id',id).maybeSingle(),
       getSupa().from('saraban_registry_files').select('*').eq('detailsend_id',id).order('file_order',{ascending:true}),
@@ -1215,9 +1214,8 @@ async function loadRegistry(force){
   var body=document.getElementById('regBody'),cnt=document.getElementById('regCount');
   body.innerHTML='<tr><td colspan="6" class="reg-empty">กำลังโหลดทะเบียนงาน...</td></tr>';cnt.textContent='กำลังโหลด...';
   try{
-    var ses=await getSupa().auth.getSession();
-    if(!ses.data||!ses.data.session){
-      body.innerHTML='<tr><td colspan="6" class="reg-empty">🔐 กรุณาลงชื่อเข้าใช้ Helper ก่อนดูทะเบียนงาน</td></tr>';cnt.textContent='ต้องเข้าสู่ระบบ';return;
+    if(!window.isHelperUnlocked||!window.isHelperUnlocked()){
+      body.innerHTML='<tr><td colspan="6" class="reg-empty">🔐 กรุณากรอก PIN Helper ก่อนดูทะเบียนงาน</td></tr>';cnt.textContent='ต้องใส่ PIN';return;
     }
     regResumePendingPull();
     var res=await getSupa().from('saraban_registry')
@@ -1909,7 +1907,9 @@ function isSupaConfigured(){
 </script>
 <script>
 (function(){
-  var helperSession=null;
+  var HELPER_PIN_HASH='5dd77994727fcccb37fe1285fd477e573f679aea327c91bf5eca252e2ba535eb';
+  var HELPER_UNLOCK_KEY='helperPinUnlockedUntil';
+  var HELPER_UNLOCK_MS=30*24*60*60*1000;
 
   function authEl(id){return document.getElementById(id);}
   function setAuthMessage(text,kind){
@@ -1917,92 +1917,73 @@ function isSupaConfigured(){
     el.textContent=text||'';
     el.className='auth-msg'+(kind?' '+kind:'');
   }
-  function renderAuth(session){
-    helperSession=session||null;
-    var btn=authEl('authBtn');
-    var out=authEl('authSignedOut');
-    var inn=authEl('authSignedIn');
-    if(session&&session.user){
-      if(btn){btn.textContent='✅ ลงชื่อเข้าใช้แล้ว';btn.className='auth-btn on';}
+  async function sha256Hex(text){
+    var data=new TextEncoder().encode(String(text||''));
+    var hash=await crypto.subtle.digest('SHA-256',data);
+    return Array.from(new Uint8Array(hash)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  }
+  window.isHelperUnlocked=function(){
+    try{return Number(localStorage.getItem(HELPER_UNLOCK_KEY)||0)>Date.now();}
+    catch(e){return false;}
+  };
+  function renderAuth(){
+    var unlocked=window.isHelperUnlocked();
+    var btn=authEl('authBtn'),out=authEl('authSignedOut'),inn=authEl('authSignedIn');
+    if(unlocked){
+      if(btn){btn.textContent='✅ PIN พร้อม';btn.className='auth-btn on';}
       if(out)out.style.display='none';
       if(inn)inn.style.display='block';
       var account=authEl('authAccountText');
-      if(account){
-        var email=(session.user.email||'บัญชี Supabase');
-        account.textContent='ลงชื่อเข้าใช้แล้ว\n'+email+'\nSession จะถูกเก็บโดย Supabase บนอุปกรณ์นี้';
-      }
+      if(account)account.textContent='เข้าใช้งานด้วย PIN แล้ว\nระบบจะจำสถานะบนอุปกรณ์นี้เป็นเวลา 30 วัน';
     }else{
-      if(btn){btn.textContent='🔐 เข้าสู่ระบบ';btn.className='auth-btn';}
+      if(btn){btn.textContent='🔐 PIN';btn.className='auth-btn';}
       if(out)out.style.display='block';
       if(inn)inn.style.display='none';
     }
   }
 
-  window.refreshAuthState=async function(){
-    try{
-      if(typeof getSupa!=='function')return;
-      var res=await getSupa().auth.getSession();
-      renderAuth(res&&res.data?res.data.session:null);
-    }catch(e){
-      console.warn('Auth state:',e);
-    }
-  };
+  window.refreshAuthState=async function(){renderAuth();};
 
   window.openAuthModal=function(){
-    var m=authEl('authModal'); if(m)m.className='modal-bg open';
-    window.refreshAuthState();
+    var m=authEl('authModal');if(m)m.className='modal-bg open';
+    renderAuth();
+    var p=authEl('authPin');if(p&&!window.isHelperUnlocked()){p.value='';setTimeout(function(){p.focus();},50);}
   };
   window.closeAuthModal=function(){
-    var m=authEl('authModal'); if(m)m.className='modal-bg';
+    if(!window.isHelperUnlocked())return;
+    var m=authEl('authModal');if(m)m.className='modal-bg';
     setAuthMessage('');
   };
 
-  window.sendAuthLink=async function(){
-    var input=authEl('authEmail');
-    var email=input?input.value.trim():'';
-    var btn=authEl('authSendBtn');
-    if(!email||email.indexOf('@')<1){
-      setAuthMessage('กรุณากรอกอีเมลให้ถูกต้อง','err');
-      return;
-    }
+  window.submitHelperPin=async function(){
+    var input=authEl('authPin'),pin=input?input.value.trim():'',btn=authEl('authSendBtn');
+    if(!/^\d{6}$/.test(pin)){setAuthMessage('กรุณากรอก PIN 6 หลัก','err');return;}
     if(btn)btn.disabled=true;
-    setAuthMessage('กำลังส่งลิงก์...');
     try{
-      var redirect=window.location.origin+window.location.pathname;
-      var res=await getSupa().auth.signInWithOtp({
-        email:email,
-        options:{emailRedirectTo:redirect}
-      });
-      if(res.error)throw res.error;
-      setAuthMessage('ส่งลิงก์แล้ว กรุณาเปิดอีเมลบนอุปกรณ์นี้เพื่อเข้าสู่ระบบ','ok');
-    }catch(e){
-      setAuthMessage('ส่งลิงก์ไม่สำเร็จ: '+e.message,'err');
-    }finally{
-      if(btn)btn.disabled=false;
-    }
+      var hash=await sha256Hex(pin);
+      if(hash!==HELPER_PIN_HASH){setAuthMessage('PIN ไม่ถูกต้อง','err');if(input){input.value='';input.focus();}return;}
+      localStorage.setItem(HELPER_UNLOCK_KEY,String(Date.now()+HELPER_UNLOCK_MS));
+      renderAuth();setAuthMessage('เข้าใช้งานแล้ว','ok');
+      var m=authEl('authModal');if(m)m.className='modal-bg';
+      if(typeof supaLoadTasks==='function')await supaLoadTasks();
+      try{if(typeof loadAutomationCenter==='function')await loadAutomationCenter(true);}catch(e){}
+      try{if(view==='registry'&&typeof loadRegistry==='function')await loadRegistry(true);}catch(e){}
+    }catch(e){setAuthMessage('ตรวจ PIN ไม่สำเร็จ: '+(e.message||e),'err');}
+    finally{if(btn)btn.disabled=false;}
   };
 
-  window.helperSignOut=async function(){
-    try{
-      await getSupa().auth.signOut();
-      renderAuth(null);
-      closeAuthModal();
-      if(typeof loadAutomationCenter==='function')loadAutomationCenter(true);
-    }catch(e){
-      setAuthMessage('ออกจากระบบไม่สำเร็จ: '+e.message,'err');
-    }
+  window.helperSignOut=function(){
+    try{localStorage.removeItem(HELPER_UNLOCK_KEY);}catch(e){}
+    renderAuth();
+    setAuthMessage('');
+    var m=authEl('authModal');if(m)m.className='modal-bg open';
   };
 
   window.addEventListener('load',function(){
-    window.refreshAuthState();
-    if(typeof getSupa==='function'){
-      try{
-        getSupa().auth.onAuthStateChange(function(event,session){
-          renderAuth(session);
-          if(typeof loadAutomationCenter==='function')setTimeout(function(){loadAutomationCenter(true);},50);
-        });
-      }catch(e){console.warn('Auth subscription:',e);}
-    }
+    renderAuth();
+    var p=authEl('authPin');
+    if(p)p.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();window.submitHelperPin();}});
+    if(!window.isHelperUnlocked())window.openAuthModal();
   });
 })();
 </script>
@@ -2077,17 +2058,16 @@ function isSupaConfigured(){
 
     try{
       var supa=getSupa();
-      var sessionRes=await supa.auth.getSession();
-      var session=sessionRes&&sessionRes.data?sessionRes.data.session:null;
+      var session=!!(window.isHelperUnlocked&&window.isHelperUnlocked());
 
       if(!session){
-        if(badge){badge.textContent='รอ Auth';badge.className='auto-badge wait';}
-        autoText('autoAgentMain','🔐 เข้าสู่ระบบเพื่อดู Agent','');
-        autoDetail('autoAgentDetail','ข้อมูล Automation จำกัดเฉพาะบัญชีเจ้าของระบบ');
+        if(badge){badge.textContent='รอ PIN';badge.className='auto-badge wait';}
+        autoText('autoAgentMain','🔐 กรอก PIN เพื่อดู Agent','');
+        autoDetail('autoAgentDetail','ข้อมูล Automation เปิดหลังยืนยัน PIN');
         autoText('autoRunMain','ยังไม่แสดง','');
-        autoDetail('autoRunDetail','เข้าสู่ระบบก่อนเพื่อดูสถานะงานอัตโนมัติ');
+        autoDetail('autoRunDetail','กรอก PIN ก่อนเพื่อดูสถานะงานอัตโนมัติ');
         autoText('autoGateMain','0 งาน','');
-        autoDetail('autoGateDetail','เข้าสู่ระบบก่อนเพื่อดู Human Gate');
+        autoDetail('autoGateDetail','กรอก PIN ก่อนเพื่อดู Human Gate');
         renderJobs([]);
         return;
       }
@@ -2130,7 +2110,7 @@ function isSupaConfigured(){
           +(agent.last_seen_at?' · '+autoDate(agent.last_seen_at):''));
       }else{
         autoText('autoAgentMain','⚪ ยังไม่มี heartbeat','');
-        autoDetail('autoAgentDetail',session?'รอ AgentChayanun รายงานสถานะ':'ต้องเปิด Auth ก่อนเชื่อม Agent');
+        autoDetail('autoAgentDetail',session?'รอ AgentChayanun รายงานสถานะ':'ต้องกรอก PIN ก่อนเชื่อม Agent');
       }
 
       var run=runRes.data&&runRes.data[0];
