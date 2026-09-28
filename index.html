@@ -770,9 +770,25 @@ var SUPA_KEY  = 'sb_publishable_hfjNIk5A0FG0WR9yW1MZTQ_KqxbHrz1';           // �
 var BUCKET    = 'attachments';
 // ════════════════════════════════════════════════════
 
-var _supa = null;
+var _supa = null, _supaSession = '', _supaRpc = null;
+var HELPER_SESSION_KEY = 'helperPinSessionToken';
+var HELPER_UNLOCK_KEY = 'helperPinUnlockedUntil';
+function getHelperSessionToken(){
+  try{return localStorage.getItem(HELPER_SESSION_KEY)||'';}catch(e){return '';}
+}
+function resetSupa(){ _supa=null; _supaSession=''; _supaRpc=null; }
+function getSupaRpc(){
+  if(!_supaRpc)_supaRpc=supabase.createClient(SUPA_URL,SUPA_KEY);
+  return _supaRpc;
+}
 function getSupa() {
-  if (!_supa) _supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+  var token=getHelperSessionToken();
+  if (!_supa || token!==_supaSession) {
+    _supaSession=token;
+    _supa=supabase.createClient(SUPA_URL,SUPA_KEY,{
+      global:{headers:token?{'x-helper-session':token}:{}}
+    });
+  }
   return _supa;
 }
 
@@ -797,8 +813,12 @@ window.onload=function(){
   setFormSpace('work');
   initRegistryFilters();
   showLoad();
-  if(window.isHelperUnlocked&&window.isHelperUnlocked())supaLoadTasks();
-  else{hideLoad();setTimeout(function(){if(window.openAuthModal)window.openAuthModal();},0);}
+  if(window.isHelperUnlocked&&window.isHelperUnlocked()&&window.validateHelperSession){
+    window.validateHelperSession().then(function(ok){
+      if(ok)supaLoadTasks();
+      else{hideLoad();if(window.openAuthModal)window.openAuthModal();}
+    });
+  }else{hideLoad();setTimeout(function(){if(window.openAuthModal)window.openAuthModal();},0);}
 };
 
 function toggleTheme(){var c=document.documentElement.getAttribute('data-theme');setTheme(c==='dark'?'light':'dark');}
@@ -1106,10 +1126,11 @@ async function regPullNow(){
       'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16);});
     var requestedAt=new Date().toISOString();
     regPullUi('⏳ ส่งคำสั่ง...',true);regPullStatus('กำลังส่งคำสั่งให้ AgentChayanun');
-    var res=await supa.from('automation_jobs')
-      .update({manual_request_id:requestId,manual_requested_at:requestedAt})
-      .eq('workflow_key','morning-document-registry').eq('enabled',true)
-      .select('id').maybeSingle();
+    var res=await getSupaRpc().rpc('helper_manual_job_request',{
+      p_token:getHelperSessionToken(),
+      p_request_id:requestId,
+      p_requested_at:requestedAt
+    });
     if(res.error)throw res.error;
     if(!res.data)throw new Error('ไม่พบงานอัตโนมัติ morning-document-registry ที่เปิดใช้งาน');
     regPullStatus('ส่งคำสั่งแล้ว · Agent จะรับภายในประมาณ 30 วินาที');
@@ -1330,8 +1351,11 @@ async function gasCall(td,ok,err){
     delete td.fileNames;
 
     var row = toRow(td);
-    var {error} = await getSupa().from('tasks').upsert(row, {onConflict:'id'});
-    if(error) throw error;
+    var saved = await getSupaRpc().rpc('helper_task_upsert',{
+      p_token:getHelperSessionToken(),
+      p_task:row
+    });
+    if(saved.error) throw saved.error;
 
     // อัปเดต local array
     var idx=tasks.findIndex(function(x){return x.id===td.id;});
@@ -1353,11 +1377,14 @@ async function toggleStatus(id){
     var targetFolder = newStatus==='completed'?'completed':'active';
     var movedUrls = await moveStorageFiles(id, t.imageUrls||[], t.status==='active'?'active':'completed', targetFolder);
 
-    var {error}=await getSupa().from('tasks').update({
-      status:newStatus,
-      image_urls:movedUrls.join(',')
-    }).eq('id',id);
-    if(error)throw error;
+    var changed=await getSupaRpc().rpc('helper_task_set_status',{
+      p_token:getHelperSessionToken(),
+      p_id:id,
+      p_status:newStatus,
+      p_image_urls:movedUrls.join(',')
+    });
+    if(changed.error)throw changed.error;
+    if(changed.data!==true)throw new Error('ไม่พบงานที่ต้องการอัปเดต');
 
     t.status=newStatus;
     t.imageUrls=movedUrls;
@@ -1376,8 +1403,12 @@ async function delTask(id){
       var src = t.status==='completed'?'completed':'active';
       await moveStorageFiles(id, t.imageUrls, src, 'deleted');
     }
-    var {error}=await getSupa().from('tasks').delete().eq('id',id);
-    if(error)throw error;
+    var removed=await getSupaRpc().rpc('helper_task_delete',{
+      p_token:getHelperSessionToken(),
+      p_id:id
+    });
+    if(removed.error)throw removed.error;
+    if(removed.data!==true)throw new Error('ไม่พบงานที่ต้องการลบ');
     tasks=tasks.filter(function(x){return x.id!==id;});
     render();
   } catch(e){ alert('ลบไม่สำเร็จ: '+e.message); }
@@ -1874,8 +1905,14 @@ function isSupaConfigured(){
   window.sbToggleInbox = function(){ open = !open; renderSbInbox(); };
 
   async function setStatus(id, status){
-    var r = await getSupa().from('tasks').update({ status: status }).eq('id', id);
+    var r = await getSupaRpc().rpc('helper_task_set_status',{
+      p_token:getHelperSessionToken(),
+      p_id:id,
+      p_status:status,
+      p_image_urls:null
+    });
     if (r.error) { alert('ไม่สำเร็จ: ' + r.error.message); return false; }
+    if (r.data!==true) { alert('ไม่พบงานที่ต้องการอัปเดต'); return false; }
     var t = (window.tasks || []).find(function(x){ return x.id === id; });
     if (t) t.status = status;
     return true;
@@ -1907,24 +1944,33 @@ function isSupaConfigured(){
 </script>
 <script>
 (function(){
-  var HELPER_PIN_HASH='5dd77994727fcccb37fe1285fd477e573f679aea327c91bf5eca252e2ba535eb';
-  var HELPER_UNLOCK_KEY='helperPinUnlockedUntil';
-  var HELPER_UNLOCK_MS=30*24*60*60*1000;
-
   function authEl(id){return document.getElementById(id);}
   function setAuthMessage(text,kind){
     var el=authEl('authMsg'); if(!el)return;
     el.textContent=text||'';
     el.className='auth-msg'+(kind?' '+kind:'');
   }
-  async function sha256Hex(text){
-    var data=new TextEncoder().encode(String(text||''));
-    var hash=await crypto.subtle.digest('SHA-256',data);
-    return Array.from(new Uint8Array(hash)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  function clearHelperSession(){
+    try{
+      localStorage.removeItem(HELPER_SESSION_KEY);
+      localStorage.removeItem(HELPER_UNLOCK_KEY);
+    }catch(e){}
+    resetSupa();
   }
   window.isHelperUnlocked=function(){
-    try{return Number(localStorage.getItem(HELPER_UNLOCK_KEY)||0)>Date.now();}
-    catch(e){return false;}
+    try{
+      return !!localStorage.getItem(HELPER_SESSION_KEY)
+        && Number(localStorage.getItem(HELPER_UNLOCK_KEY)||0)>Date.now();
+    }catch(e){return false;}
+  };
+  window.validateHelperSession=async function(){
+    var token=getHelperSessionToken();
+    if(!window.isHelperUnlocked()||!token){clearHelperSession();return false;}
+    try{
+      var r=await getSupaRpc().rpc('helper_check_session',{p_token:token});
+      if(r.error||r.data!==true){clearHelperSession();return false;}
+      return true;
+    }catch(e){clearHelperSession();return false;}
   };
   function renderAuth(){
     var unlocked=window.isHelperUnlocked();
@@ -1934,7 +1980,7 @@ function isSupaConfigured(){
       if(out)out.style.display='none';
       if(inn)inn.style.display='block';
       var account=authEl('authAccountText');
-      if(account)account.textContent='เข้าใช้งานด้วย PIN แล้ว\nระบบจะจำสถานะบนอุปกรณ์นี้เป็นเวลา 30 วัน';
+      if(account)account.textContent='เข้าใช้งานด้วย PIN แล้ว\nSession ถูกตรวจโดย Supabase และมีอายุสูงสุด 30 วัน';
     }else{
       if(btn){btn.textContent='🔐 PIN';btn.className='auth-btn';}
       if(out)out.style.display='block';
@@ -1959,10 +2005,19 @@ function isSupaConfigured(){
     var input=authEl('authPin'),pin=input?input.value.trim():'',btn=authEl('authSendBtn');
     if(!/^\d{6}$/.test(pin)){setAuthMessage('กรุณากรอก PIN 6 หลัก','err');return;}
     if(btn)btn.disabled=true;
+    setAuthMessage('กำลังตรวจ PIN...');
     try{
-      var hash=await sha256Hex(pin);
-      if(hash!==HELPER_PIN_HASH){setAuthMessage('PIN ไม่ถูกต้อง','err');if(input){input.value='';input.focus();}return;}
-      localStorage.setItem(HELPER_UNLOCK_KEY,String(Date.now()+HELPER_UNLOCK_MS));
+      var r=await getSupaRpc().rpc('helper_unlock',{p_pin:pin});
+      if(r.error)throw r.error;
+      var session=r.data||{};
+      if(!session.ok||!session.token){
+        setAuthMessage(session.message||'PIN ไม่ถูกต้อง','err');
+        if(input){input.value='';input.focus();}
+        return;
+      }
+      localStorage.setItem(HELPER_SESSION_KEY,session.token);
+      localStorage.setItem(HELPER_UNLOCK_KEY,String(new Date(session.expires_at).getTime()));
+      resetSupa();
       renderAuth();setAuthMessage('เข้าใช้งานแล้ว','ok');
       var m=authEl('authModal');if(m)m.className='modal-bg';
       if(typeof supaLoadTasks==='function')await supaLoadTasks();
@@ -1972,8 +2027,10 @@ function isSupaConfigured(){
     finally{if(btn)btn.disabled=false;}
   };
 
-  window.helperSignOut=function(){
-    try{localStorage.removeItem(HELPER_UNLOCK_KEY);}catch(e){}
+  window.helperSignOut=async function(){
+    var token=getHelperSessionToken();
+    try{if(token)await getSupaRpc().rpc('helper_lock',{p_token:token});}catch(e){}
+    clearHelperSession();
     renderAuth();
     setAuthMessage('');
     var m=authEl('authModal');if(m)m.className='modal-bg open';
