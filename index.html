@@ -557,7 +557,7 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
 <div id="listView">
   <div class="search-wrap">
     <div class="search-row">
-      <input class="s-inp" id="searchInp" type="search" name="helper-task-filter" autocomplete="off" data-lpignore="true" data-form-type="other" placeholder="🔍 ค้นหา..." oninput="applyF()">
+      <input class="s-inp" id="searchInp" type="search" autocomplete="new-password" autocapitalize="off" spellcheck="false" aria-label="ค้นหาภารกิจ" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-form-type="other" placeholder="🔍 ค้นหา..." oninput="handleTaskSearchInput(event)">
       <select class="s-sel" id="sortSel" onchange="applyF()">
         <option value="deadline">เรียง: กำหนดส่ง</option>
         <option value="priority">เรียง: ความสำคัญ</option>
@@ -795,6 +795,25 @@ function getSupa() {
 // ════════ STATE ════════
 var tasks=[],editId=null,imgs=[],fileNames=[],fGroup='all',fQ='',fSort='deadline',view='list',formOpen=false,calY,calM,calSel=null,activeSpace='all',currentFormSpace='work';
 var registryRows=[],registryLoaded=false,registryScope='all';
+var searchUserTouched=false;
+function looksLikeUnexpectedEmailAutofill(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||'').trim());}
+function clearUnexpectedSearchAutofill(){
+  var inp=document.getElementById('searchInp');if(!inp||searchUserTouched)return false;
+  if(!looksLikeUnexpectedEmailAutofill(inp.value))return false;
+  inp.value='';fQ='';renderTasks();return true;
+}
+function handleTaskSearchInput(e){
+  var inp=(e&&e.currentTarget)||document.getElementById('searchInp');
+  if(!searchUserTouched&&inp&&looksLikeUnexpectedEmailAutofill(inp.value)){inp.value='';fQ='';renderTasks();return;}
+  applyF();
+}
+function initTaskSearchGuard(){
+  var inp=document.getElementById('searchInp');if(!inp)return;
+  inp.addEventListener('keydown',function(e){if(e.key.length===1||e.key==='Backspace'||e.key==='Delete')searchUserTouched=true;});
+  inp.addEventListener('paste',function(){searchUserTouched=true;});
+  inp.addEventListener('cut',function(){searchUserTouched=true;});
+  [0,150,500,1200,2500].forEach(function(ms){setTimeout(clearUnexpectedSearchAutofill,ms);});
+}
 var TMONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 var TDAYS=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 var DLABELS=[{t:'จ'},{t:'อ'},{t:'พ'},{t:'พฤ'},{t:'ศ'},{t:'ส',w:1},{t:'อา',w:1}];
@@ -812,6 +831,7 @@ window.onload=function(){
   var saved=localStorage.getItem('helperTheme');if(saved)setTheme(saved);
   setFormSpace('work');
   initRegistryFilters();
+  initTaskSearchGuard();
   showLoad();
   if(window.isHelperUnlocked&&window.isHelperUnlocked()&&window.validateHelperSession){
     window.validateHelperSession().then(function(ok){
