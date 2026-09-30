@@ -1197,6 +1197,7 @@ function svSelectFile(fid){
   if(frame){frame.style.display='block';frame.src=f.public_url+'#toolbar=1&navpanes=0&view=FitH';}
 }
 var SARABAN_LOCAL='http://127.0.0.1:8777';
+function canUseLocalSaraban(){return location.protocol==='http:'&&(location.hostname==='127.0.0.1'||location.hostname==='localhost');}
 async function loadLocalSaraban(id){
   var ctl=new AbortController(),tm=setTimeout(function(){ctl.abort();},3500);
   try{
@@ -1238,13 +1239,19 @@ async function openSarabanDetail(value){
     var mirrorError=results[0].error||results[1].error||results[2].error||null;
     var d=mirrorError?null:results[0].data,files=mirrorError?[]:(results[1].data||[]),pages=mirrorError?[]:(results[2].data||[]);
     if(!d){
-      try{
-        var local=mapLocalSaraban(await loadLocalSaraban(id));
-        d=local.doc;files=local.files;pages=local.pages;
-        if(!d||!d.detailsend_id)throw new Error('ไม่พบข้อมูลเอกสารในสารบัญส่วนตัว');
-      }catch(localErr){
-        content.innerHTML=(task?'<div class="sv-info"><div class="sv-kv">เลขที่หนังสือ<b>'+esc(task.docNo||'-')+'</b></div><div class="sv-kv">กลุ่มงาน<b>'+esc(task.workGroup||'-')+'</b></div><div class="sv-kv">วันที่รับ<b>'+esc(task.startDate||'-')+'</b></div>'+(task.details?'<div class="sv-summary"><b style="color:var(--text)">รายละเอียด / สรุปจากระบบสารบัญ</b>\n'+esc(task.details)+'</div>':'')+'</div>':'')+
-          '<div class="sv-status" style="min-height:auto;padding:18px">ℹ️ แสดงข้อมูลภารกิจได้ แต่ยังโหลด PDF/ข้อความฉบับเต็มไม่ได้'+(task&&task.fileLink?' — ใช้ปุ่ม “เปิดใน e-Office” ด้านบนเพื่ออ่านต้นฉบับ':'')+'<br><span style="font-size:11px;color:var(--text3)">สารบัญส่วนตัว: '+esc(localErr.message||localErr)+'</span></div>';
+      if(canUseLocalSaraban()){
+        try{
+          var local=mapLocalSaraban(await loadLocalSaraban(id));
+          d=local.doc;files=local.files;pages=local.pages;
+          if(!d||!d.detailsend_id)throw new Error('ไม่พบข้อมูลเอกสารในสารบัญส่วนตัว');
+        }catch(localErr){
+          content.innerHTML=(task?'<div class="sv-info"><div class="sv-kv">เลขที่หนังสือ<b>'+esc(task.docNo||'-')+'</b></div><div class="sv-kv">กลุ่มงาน<b>'+esc(task.workGroup||'-')+'</b></div><div class="sv-kv">วันที่รับ<b>'+esc(task.startDate||'-')+'</b></div>'+(task.details?'<div class="sv-summary"><b style="color:var(--text)">รายละเอียด / สรุปจากระบบสารบัญ</b>\n'+esc(task.details)+'</div>':'')+'</div>':'')+
+            '<div class="sv-status" style="min-height:auto;padding:18px">ℹ️ แสดงข้อมูลภารกิจได้ แต่ยังโหลด PDF/ข้อความฉบับเต็มจากสารบัญส่วนตัวไม่ได้'+(task&&task.fileLink?' — ใช้ปุ่ม “เปิดใน e-Office” ด้านบนเพื่ออ่านต้นฉบับ':'')+'<br><span style="font-size:11px;color:var(--text3)">'+esc(localErr.message||localErr)+'</span></div>';
+          return;
+        }
+      }else{
+        content.innerHTML=(task?'<div class="sv-info"><div class="sv-kv">เลขที่หนังสือ<b>'+esc(task.docNo||'-')+'</b></div><div class="sv-kv">กลุ่มงาน<b>'+esc(task.workGroup||'-')+'</b></div><div class="sv-kv">วันที่รับ<b>'+esc(task.startDate||'-')+'</b></div><div class="sv-kv">ความสำคัญ<b>'+esc(task.priority||'-')+'</b></div>'+(task.details?'<div class="sv-summary"><b style="color:var(--text)">รายละเอียด / สรุปจากระบบสารบัญ</b>\n'+esc(task.details)+'</div>':'')+'</div>':'')+
+          '<div class="sv-status" style="min-height:auto;padding:18px">📄 ข้อมูลสรุปแสดงครบด้านบน'+(task&&task.fileLink?' — กด “เปิดใน e-Office” ด้านบนเพื่ออ่านหนังสือต้นฉบับ':'')+'<br><span style="font-size:11px;color:var(--text3)">หากเปิด Helper บนเครื่อง 2 ผ่าน localhost ระบบจะอ่าน PDF และข้อความสกัดจากสารบัญส่วนตัวได้โดยตรง</span></div>';
         return;
       }
     }
