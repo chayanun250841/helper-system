@@ -1189,12 +1189,31 @@ function closeSarabanDetail(){
   document.body.style.overflow='';
 }
 function svSelectFile(fid){
-  document.querySelectorAll('.sv-file').forEach(function(b){b.classList.toggle('on',Number(b.dataset.fid)===Number(fid));});
+  document.querySelectorAll('.sv-file[data-fid]').forEach(function(b){b.classList.toggle('on',Number(b.dataset.fid)===Number(fid));});
   var f=(window._svFiles||[]).find(function(x){return Number(x.filegroup_id)===Number(fid);});
   var frame=document.getElementById('svPdfFrame'),empty=document.getElementById('svPdfEmpty');
   if(!f||!f.public_url){if(frame)frame.style.display='none';if(empty){empty.style.display='flex';empty.innerHTML='ไฟล์นี้ยังไม่ได้ซิงก์ PDF เข้ามาใน Helper';}return;}
   if(empty)empty.style.display='none';
   if(frame){frame.style.display='block';frame.src=f.public_url+'#toolbar=1&navpanes=0&view=FitH';}
+}
+var SARABAN_LOCAL='http://127.0.0.1:8777';
+async function loadLocalSaraban(id){
+  var ctl=new AbortController(),tm=setTimeout(function(){ctl.abort();},3500);
+  try{
+    var r=await fetch(SARABAN_LOCAL+'/api/document/'+Number(id),{cache:'no-store',signal:ctl.signal});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return await r.json();
+  }finally{clearTimeout(tm);}
+}
+function mapLocalSaraban(local){
+  var d=Object.assign({},local.doc||{}),areas=local.areas||[],summary=local.summary||{};
+  d.received_date=(d.doc_rec_date||'').slice(0,10);
+  d.org_area=areas.map(function(a){return a.area;}).filter(Boolean).join(', ');
+  d.summary_text=summary.summary_text||'';
+  var files=(local.files||[]).filter(function(f){return f.filegroup_id&&f.status!=='error';}).map(function(f){
+    return Object.assign({},f,{file_name:f.filesend_name||('ไฟล์ '+f.filegroup_id),public_url:SARABAN_LOCAL+'/api/file/'+Number(f.filegroup_id),local_url:SARABAN_LOCAL+'/view/file/'+Number(f.filegroup_id)});
+  });
+  return {doc:d,files:files,pages:local.pages||[]};
 }
 async function openSarabanDetail(value){
   var id=sarabanId(value);if(!id){alert('ไม่พบรหัสหนังสือ');return;}
@@ -1216,18 +1235,24 @@ async function openSarabanDetail(value){
       getSupa().from('saraban_registry_files').select('*').eq('detailsend_id',id).order('file_order',{ascending:true}),
       getSupa().from('saraban_registry_pages').select('*').eq('detailsend_id',id).order('filegroup_id',{ascending:true}).order('page_no',{ascending:true})
     ]);
-    if(results[0].error)throw results[0].error;if(results[1].error)throw results[1].error;if(results[2].error)throw results[2].error;
-    var d=results[0].data,files=results[1].data||[],pages=results[2].data||[];
+    var mirrorError=results[0].error||results[1].error||results[2].error||null;
+    var d=mirrorError?null:results[0].data,files=mirrorError?[]:(results[1].data||[]),pages=mirrorError?[]:(results[2].data||[]);
     if(!d){
-      content.innerHTML=(task?'<div class="sv-info"><div class="sv-kv">เลขที่หนังสือ<b>'+esc(task.docNo||'-')+'</b></div><div class="sv-kv">กลุ่มงาน<b>'+esc(task.workGroup||'-')+'</b></div><div class="sv-kv">วันที่รับ<b>'+esc(task.startDate||'-')+'</b></div>'+(task.details?'<div class="sv-summary"><b style="color:var(--text)">รายละเอียด / สรุปจากระบบสารบัญ</b>\n'+esc(task.details)+'</div>':'')+'</div>':'')+
-        '<div class="sv-status" style="min-height:auto;padding:18px">ℹ️ รายการนี้มีข้อมูลภารกิจแล้ว แต่ PDF/ข้อความฉบับเต็มยังไม่ถูก mirror เข้า Helper'+(task&&task.fileLink?' — ใช้ปุ่ม “เปิดใน e-Office” ด้านบนเพื่ออ่านต้นฉบับ':'')+'</div>';
-      return;
+      try{
+        var local=mapLocalSaraban(await loadLocalSaraban(id));
+        d=local.doc;files=local.files;pages=local.pages;
+        if(!d||!d.detailsend_id)throw new Error('ไม่พบข้อมูลเอกสารในสารบัญส่วนตัว');
+      }catch(localErr){
+        content.innerHTML=(task?'<div class="sv-info"><div class="sv-kv">เลขที่หนังสือ<b>'+esc(task.docNo||'-')+'</b></div><div class="sv-kv">กลุ่มงาน<b>'+esc(task.workGroup||'-')+'</b></div><div class="sv-kv">วันที่รับ<b>'+esc(task.startDate||'-')+'</b></div>'+(task.details?'<div class="sv-summary"><b style="color:var(--text)">รายละเอียด / สรุปจากระบบสารบัญ</b>\n'+esc(task.details)+'</div>':'')+'</div>':'')+
+          '<div class="sv-status" style="min-height:auto;padding:18px">ℹ️ แสดงข้อมูลภารกิจได้ แต่ยังโหลด PDF/ข้อความฉบับเต็มไม่ได้'+(task&&task.fileLink?' — ใช้ปุ่ม “เปิดใน e-Office” ด้านบนเพื่ออ่านต้นฉบับ':'')+'<br><span style="font-size:11px;color:var(--text3)">สารบัญส่วนตัว: '+esc(localErr.message||localErr)+'</span></div>';
+        return;
+      }
     }
     window._svFiles=files;
     title.textContent=d.doc_header||(task&&task.title)||'หนังสือรับ';
     meta.textContent='เลขรับ '+(d.rec_no||'-')+' · '+(d.doc_no||(task&&task.docNo)||'-')+' · รับ '+regThaiDate(d.received_date||d.received_at||(task&&task.startDate));
     var source=d.source_url||(task&&task.fileLink)||'';if(source){eo.href=source;eo.style.display='inline-flex';}else eo.style.display='none';
-    var fileBtns=files.length?files.map(function(f,i){return '<button class="sv-file'+(i===0?' on':'')+'" data-fid="'+Number(f.filegroup_id)+'" onclick="svSelectFile('+Number(f.filegroup_id)+')">📄 '+esc(f.file_name||('ไฟล์ '+(i+1)))+(f.pages?' · '+f.pages+' หน้า':'')+'</button>';}).join(''):'<span style="font-size:11px;color:var(--text3)">ยังไม่มี PDF ที่ซิงก์เข้า Helper</span>';
+    var fileBtns=files.length?files.map(function(f,i){var fid=Number(f.filegroup_id),label='📄 '+esc(f.file_name||('ไฟล์ '+(i+1)))+(f.pages?' · '+f.pages+' หน้า':'');return '<button class="sv-file'+(i===0?' on':'')+'" data-fid="'+fid+'" onclick="svSelectFile('+fid+')">'+label+'</button>'+(f.local_url?'<a class="sv-file" href="'+esc(f.local_url)+'" target="_blank" rel="noopener">↗ เปิดแยก</a>':'');}).join(''):'<span style="font-size:11px;color:var(--text3)">ยังไม่มี PDF ที่อ่านได้</span>';
     var pageHtml=pages.length?pages.map(function(p){var q=p.quality==null?'':(' · '+Math.round(Number(p.quality)*100)+'%');return '<details class="sv-page"><summary>หน้า '+Number(p.page_no)+' · '+esc(p.source||'ข้อความ')+q+'</summary><pre>'+esc(p.content||'(ไม่มีข้อความ)')+'</pre></details>';}).join(''):'<div style="font-size:11px;color:var(--text3)">ยังไม่มีข้อความที่สกัดจากไฟล์แนบ</div>';
     var summary=d.summary_text||(task&&task.details)||'';
     content.innerHTML='<div class="sv-info"><div class="sv-kv">เลขรับ<b>'+esc(d.rec_no||'-')+'</b></div><div class="sv-kv">เลขที่หนังสือ<b>'+esc(d.doc_no||(task&&task.docNo)||'-')+'</b></div><div class="sv-kv">จาก<b>'+esc(d.send_from||'-')+'</b></div><div class="sv-kv">กลุ่มงาน<b>'+esc(d.org_area||d.areas||(task&&task.workGroup)||'-')+'</b></div><div class="sv-kv">วันที่รับ<b>'+esc(regThaiDate(d.received_date||d.received_at||(task&&task.startDate)))+'</b></div><div class="sv-kv">สถานะ<b>'+esc(d.doc_rec_status||'-')+'</b></div><div class="sv-kv">ชั้นความเร็ว<b>'+esc(d.speed_name||'-')+'</b></div><div class="sv-kv">เรียน<b>'+esc(d.doc_dear||'-')+'</b></div>'+(summary?'<div class="sv-summary"><b style="color:var(--text)">สรุปเนื้อหา</b>\n'+esc(summary)+'</div>':'')+'</div><div class="sv-files">'+fileBtns+'</div><div class="sv-main"><div class="sv-pdf"><iframe id="svPdfFrame" title="หนังสือต้นฉบับ" style="display:none"></iframe><div class="sv-no-pdf" id="svPdfEmpty">ยังไม่มี PDF ที่ซิงก์เข้า Helper<br>กด “เปิดใน e-Office” เพื่ออ่านต้นฉบับได้ทันที</div></div><div class="sv-text"><div class="sv-text-h">📝 เนื้อหาที่อ่านได้จากเอกสาร</div>'+pageHtml+'</div></div>';
