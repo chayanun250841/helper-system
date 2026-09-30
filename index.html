@@ -1198,9 +1198,17 @@ function svSelectFile(fid){
 }
 async function openSarabanDetail(value){
   var id=sarabanId(value);if(!id){alert('ไม่พบรหัสหนังสือ');return;}
-  var modal=document.getElementById('sarabanViewer'),title=document.getElementById('svTitle'),meta=document.getElementById('svMeta'),content=document.getElementById('svContent');
+  var taskId=String(value||'').indexOf('sb-')===0?String(value):'sb-'+id;
+  var task=(window.tasks||[]).find(function(x){return x.id===taskId;})||null;
+  var modal=document.getElementById('sarabanViewer'),title=document.getElementById('svTitle'),meta=document.getElementById('svMeta'),content=document.getElementById('svContent'),eo=document.getElementById('svEoffice');
   modal.className='sv-bg open';document.body.style.overflow='hidden';
-  title.textContent='กำลังโหลดหนังสือ...';meta.textContent='เลขอ้างอิง '+id;content.className='sv-status';content.innerHTML='กำลังโหลดรายละเอียดและไฟล์ต้นฉบับ...';
+  title.textContent=task&&task.title?task.title:'กำลังโหลดหนังสือ...';
+  meta.textContent=task?((task.docNo||'ไม่มีเลขที่หนังสือ')+' · รับ '+(task.startDate||'-')):'เลขอ้างอิง '+id;
+  if(task&&task.fileLink){eo.href=task.fileLink;eo.style.display='inline-flex';}else eo.style.display='none';
+  content.className='';
+  content.innerHTML=task
+    ? '<div class="sv-info"><div class="sv-kv">เลขที่หนังสือ<b>'+esc(task.docNo||'-')+'</b></div><div class="sv-kv">กลุ่มงาน<b>'+esc(task.workGroup||'-')+'</b></div><div class="sv-kv">วันที่รับ<b>'+esc(task.startDate||'-')+'</b></div><div class="sv-kv">ความสำคัญ<b>'+esc(task.priority||'-')+'</b></div>'+(task.details?'<div class="sv-summary"><b style="color:var(--text)">รายละเอียด / สรุปจากระบบสารบัญ</b>\n'+esc(task.details)+'</div>':'')+'</div><div class="sv-status" style="min-height:auto;padding:18px">กำลังตรวจ PDF และข้อความที่ซิงก์เข้า Helper…</div>'
+    : '<div class="sv-status">กำลังโหลดรายละเอียดและไฟล์ต้นฉบับ...</div>';
   try{
     if(!window.isHelperUnlocked||!window.isHelperUnlocked())throw new Error('กรุณากรอก PIN Helper ก่อนอ่านหนังสือ');
     var results=await Promise.all([
@@ -1209,36 +1217,24 @@ async function openSarabanDetail(value){
       getSupa().from('saraban_registry_pages').select('*').eq('detailsend_id',id).order('filegroup_id',{ascending:true}).order('page_no',{ascending:true})
     ]);
     if(results[0].error)throw results[0].error;if(results[1].error)throw results[1].error;if(results[2].error)throw results[2].error;
-    var d=results[0].data||{},files=results[1].data||[],pages=results[2].data||[];
+    var d=results[0].data,files=results[1].data||[],pages=results[2].data||[];
+    if(!d){
+      content.innerHTML=(task?'<div class="sv-info"><div class="sv-kv">เลขที่หนังสือ<b>'+esc(task.docNo||'-')+'</b></div><div class="sv-kv">กลุ่มงาน<b>'+esc(task.workGroup||'-')+'</b></div><div class="sv-kv">วันที่รับ<b>'+esc(task.startDate||'-')+'</b></div>'+(task.details?'<div class="sv-summary"><b style="color:var(--text)">รายละเอียด / สรุปจากระบบสารบัญ</b>\n'+esc(task.details)+'</div>':'')+'</div>':'')+
+        '<div class="sv-status" style="min-height:auto;padding:18px">ℹ️ รายการนี้มีข้อมูลภารกิจแล้ว แต่ PDF/ข้อความฉบับเต็มยังไม่ถูก mirror เข้า Helper'+(task&&task.fileLink?' — ใช้ปุ่ม “เปิดใน e-Office” ด้านบนเพื่ออ่านต้นฉบับ':'')+'</div>';
+      return;
+    }
     window._svFiles=files;
-    title.textContent=d.doc_header||'หนังสือรับ';
-    meta.textContent='เลขรับ '+(d.rec_no||'-')+' · '+(d.doc_no||'-')+' · รับ '+regThaiDate(d.received_date||d.received_at);
-    var eo=document.getElementById('svEoffice');if(d.source_url){eo.href=d.source_url;eo.style.display='inline-flex';}else eo.style.display='none';
+    title.textContent=d.doc_header||(task&&task.title)||'หนังสือรับ';
+    meta.textContent='เลขรับ '+(d.rec_no||'-')+' · '+(d.doc_no||(task&&task.docNo)||'-')+' · รับ '+regThaiDate(d.received_date||d.received_at||(task&&task.startDate));
+    var source=d.source_url||(task&&task.fileLink)||'';if(source){eo.href=source;eo.style.display='inline-flex';}else eo.style.display='none';
     var fileBtns=files.length?files.map(function(f,i){return '<button class="sv-file'+(i===0?' on':'')+'" data-fid="'+Number(f.filegroup_id)+'" onclick="svSelectFile('+Number(f.filegroup_id)+')">📄 '+esc(f.file_name||('ไฟล์ '+(i+1)))+(f.pages?' · '+f.pages+' หน้า':'')+'</button>';}).join(''):'<span style="font-size:11px;color:var(--text3)">ยังไม่มี PDF ที่ซิงก์เข้า Helper</span>';
-    var pageHtml=pages.length?pages.map(function(p){
-      var q=p.quality==null?'':(' · '+Math.round(Number(p.quality)*100)+'%');
-      return '<details class="sv-page"><summary>หน้า '+Number(p.page_no)+' · '+esc(p.source||'ข้อความ')+q+'</summary><pre>'+esc(p.content||'(ไม่มีข้อความ)')+'</pre></details>';
-    }).join(''):'<div style="font-size:11px;color:var(--text3)">ยังไม่มีข้อความที่สกัดจากไฟล์แนบ</div>';
-    var summary=d.summary_text||'';
-    content.className='';
-    content.innerHTML='<div class="sv-info">'+
-      '<div class="sv-kv">เลขรับ<b>'+esc(d.rec_no||'-')+'</b></div>'+
-      '<div class="sv-kv">เลขที่หนังสือ<b>'+esc(d.doc_no||'-')+'</b></div>'+
-      '<div class="sv-kv">จาก<b>'+esc(d.send_from||'-')+'</b></div>'+
-      '<div class="sv-kv">กลุ่มงาน<b>'+esc(d.org_area||d.areas||'-')+'</b></div>'+
-      '<div class="sv-kv">วันที่รับ<b>'+esc(regThaiDate(d.received_date||d.received_at))+'</b></div>'+
-      '<div class="sv-kv">สถานะ<b>'+esc(d.doc_rec_status||'-')+'</b></div>'+
-      '<div class="sv-kv">ชั้นความเร็ว<b>'+esc(d.speed_name||'-')+'</b></div>'+
-      '<div class="sv-kv">เรียน<b>'+esc(d.doc_dear||'-')+'</b></div>'+
-      (summary?'<div class="sv-summary"><b style="color:var(--text)">สรุปเนื้อหา</b>\n'+esc(summary)+'</div>':'')+
-      '</div>'+
-      '<div class="sv-files">'+fileBtns+'</div>'+
-      '<div class="sv-main"><div class="sv-pdf"><iframe id="svPdfFrame" title="หนังสือต้นฉบับ" style="display:none"></iframe><div class="sv-no-pdf" id="svPdfEmpty">ยังไม่มี PDF ที่ซิงก์เข้า Helper<br>รายละเอียดและข้อความที่อ่านได้จะแสดงด้านขวา</div></div>'+
-      '<div class="sv-text"><div class="sv-text-h">📝 เนื้อหาที่อ่านได้จากเอกสาร</div>'+pageHtml+'</div></div>';
+    var pageHtml=pages.length?pages.map(function(p){var q=p.quality==null?'':(' · '+Math.round(Number(p.quality)*100)+'%');return '<details class="sv-page"><summary>หน้า '+Number(p.page_no)+' · '+esc(p.source||'ข้อความ')+q+'</summary><pre>'+esc(p.content||'(ไม่มีข้อความ)')+'</pre></details>';}).join(''):'<div style="font-size:11px;color:var(--text3)">ยังไม่มีข้อความที่สกัดจากไฟล์แนบ</div>';
+    var summary=d.summary_text||(task&&task.details)||'';
+    content.innerHTML='<div class="sv-info"><div class="sv-kv">เลขรับ<b>'+esc(d.rec_no||'-')+'</b></div><div class="sv-kv">เลขที่หนังสือ<b>'+esc(d.doc_no||(task&&task.docNo)||'-')+'</b></div><div class="sv-kv">จาก<b>'+esc(d.send_from||'-')+'</b></div><div class="sv-kv">กลุ่มงาน<b>'+esc(d.org_area||d.areas||(task&&task.workGroup)||'-')+'</b></div><div class="sv-kv">วันที่รับ<b>'+esc(regThaiDate(d.received_date||d.received_at||(task&&task.startDate)))+'</b></div><div class="sv-kv">สถานะ<b>'+esc(d.doc_rec_status||'-')+'</b></div><div class="sv-kv">ชั้นความเร็ว<b>'+esc(d.speed_name||'-')+'</b></div><div class="sv-kv">เรียน<b>'+esc(d.doc_dear||'-')+'</b></div>'+(summary?'<div class="sv-summary"><b style="color:var(--text)">สรุปเนื้อหา</b>\n'+esc(summary)+'</div>':'')+'</div><div class="sv-files">'+fileBtns+'</div><div class="sv-main"><div class="sv-pdf"><iframe id="svPdfFrame" title="หนังสือต้นฉบับ" style="display:none"></iframe><div class="sv-no-pdf" id="svPdfEmpty">ยังไม่มี PDF ที่ซิงก์เข้า Helper<br>กด “เปิดใน e-Office” เพื่ออ่านต้นฉบับได้ทันที</div></div><div class="sv-text"><div class="sv-text-h">📝 เนื้อหาที่อ่านได้จากเอกสาร</div>'+pageHtml+'</div></div>';
     if(files.length)svSelectFile(files[0].filegroup_id);
   }catch(e){
-    title.textContent='เปิดรายละเอียดไม่สำเร็จ';meta.textContent='เลขอ้างอิง '+id;
-    content.className='sv-status';content.innerHTML='⚠️ '+esc(e.message||e);
+    if(task){content.innerHTML='<div class="sv-info">'+(task.details?'<div class="sv-summary"><b style="color:var(--text)">รายละเอียด / สรุปจากระบบสารบัญ</b>\n'+esc(task.details)+'</div>':'')+'</div><div class="sv-status" style="min-height:auto;padding:18px">⚠️ โหลดข้อมูลฉบับเต็มจากทะเบียนไม่ได้: '+esc(e.message||e)+(task.fileLink?' — ยังเปิดต้นฉบับผ่านปุ่ม e-Office ด้านบนได้':'')+'</div>';}
+    else{title.textContent='เปิดรายละเอียดไม่สำเร็จ';meta.textContent='เลขอ้างอิง '+id;content.className='sv-status';content.innerHTML='⚠️ '+esc(e.message||e);}
   }
 }
 function regOpen(id){
@@ -1887,16 +1883,16 @@ function isSupaConfigured(){
           ? '<span class="ib-tag ib-due">กำหนด ' + t.dueDate + '</span>' : '';
         var pri = t.priority === 'high'
           ? '<span class="ib-tag ib-due">🔴 ด่วน</span>' : '';
-        h += '<li>'
-          + '<div class="ib-t">' + esc(t.title) + '</div>'
+        h += '<li onclick="openSarabanDetail(\'' + t.id + '\')" title="คลิกเพื่อดูรายละเอียดเอกสาร" style="cursor:pointer">'
+          + '<div class="ib-t">' + esc(t.title) + ' <span style="font-size:11px;color:#2563eb;font-weight:500">ดูรายละเอียด ↗</span></div>'
           + '<div class="ib-m">' + pri + due
           + '<span class="ib-tag">' + esc(t.workGroup) + '</span>'
           + esc(t.docNo || '') + ' · รับ ' + esc(t.startDate || '-') + '</div>'
           + '<div class="ib-d">' + esc(t.details || '') + '</div>'
           + '<div class="ib-b">'
-          + '<button class="ib-ok" onclick="sbConfirm(\'' + t.id + '\')">✓ ยืนยัน เพิ่มเป็นภารกิจ</button>'
-          + '<button class="ib-no" onclick="sbReject(\'' + t.id + '\')">✕ ไม่เกี่ยวกับผม</button>'
-          + '<button class="ib-lk" type="button" onclick="openSarabanDetail(\'' + t.id + '\')">🔎 ดูรายละเอียด / อ่านหนังสือต้นฉบับ</button>'
+          + '<button class="ib-ok" onclick="event.stopPropagation();sbConfirm(\'' + t.id + '\')">✓ ยืนยัน เพิ่มเป็นภารกิจ</button>'
+          + '<button class="ib-no" onclick="event.stopPropagation();sbReject(\'' + t.id + '\')">✕ ไม่เกี่ยวกับผม</button>'
+          + '<button class="ib-lk" type="button" onclick="event.stopPropagation();openSarabanDetail(\'' + t.id + '\')">🔎 ดูรายละเอียด / อ่านหนังสือต้นฉบับ</button>'
           + '</div></li>';
       });
       h += '</ul>';
