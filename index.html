@@ -168,16 +168,41 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
 .dlabels{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border);}
 .dlbl{text-align:center;padding:8px 4px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
 .dlbl.wk{color:var(--red);}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
-.cal-cell{min-height:72px;padding:6px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
+.cal-cell{min-height:96px;padding:6px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;position:relative;display:flex;flex-direction:column;gap:3px;min-width:0;}
+.cal-top{display:flex;align-items:center;justify-content:space-between;gap:4px;}
+.cal-cnt{font-size:10px;font-weight:700;padding:1px 6px;border-radius:9px;background:var(--bg2);color:var(--text2);}
+.cal-cnt.over{background:rgba(248,113,113,.18);color:var(--red);}
+.cal-chip{font-size:11px;line-height:1.35;padding:2px 6px;border-radius:5px;border-left:3px solid var(--accent);background:rgba(91,141,239,.12);color:var(--text);white-space:normal;word-break:break-word;}
+.cal-chip.k-done{border-color:var(--green);background:rgba(62,207,142,.08);color:var(--text3);text-decoration:line-through;}
+.cal-chip.k-urg{border-color:var(--red);background:rgba(248,113,113,.15);font-weight:600;}
+.cal-chip.k-approv{border-color:#ea580c;background:rgba(234,88,12,.13);}
+.cal-chip.k-wait{border-color:var(--amber);background:rgba(251,191,36,.12);}
+.cal-chip.k-personal{border-color:var(--personal);background:var(--personal2);}
+.cal-more{font-size:10px;color:var(--text3);padding-left:2px;}
+.cal-load{margin-top:auto;height:3px;border-radius:2px;background:var(--accent);opacity:.35;}
+.cal-load-lbl{font-size:9.5px;color:var(--text3);}
+.cal-sum{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border);}
+.cal-sum>div{padding:10px 14px;border-right:1px solid var(--border);}
+.cal-sum>div:last-child{border-right:none;}
+.cal-sum b{display:block;font-size:20px;font-weight:700;color:var(--text);line-height:1.2;}
+.cal-sum span{font-size:11px;color:var(--text3);}
+.cal-sum .s-over b{color:var(--red);}
+.cal-sum .s-done b{color:var(--green);}
+.cal-legend{display:flex;gap:14px;padding:10px 18px;flex-wrap:wrap;font-size:12px;color:var(--text3);}
+.cal-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;}
+.det-sec{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 2px;}
+.det-sec:first-child{margin-top:0;}
+@media(max-width:640px){.cal-cell{min-height:64px;padding:4px;}.cal-chip{font-size:0;padding:0;height:5px;border-left-width:0;border-radius:3px;}.cal-chip.k-done{opacity:.6;}.cal-load-lbl,.cal-more{display:none;}.cal-sum{grid-template-columns:repeat(2,1fr);}.cal-sum>div:nth-child(2){border-right:none;}.cal-sum>div:nth-child(-n+2){border-bottom:1px solid var(--border);}}
 .cal-cell:nth-child(7n){border-right:none;}
 .cal-cell:hover:not(.ec){background:var(--bg2);}
 .cal-cell.ec{background:transparent;cursor:default;}
 .cal-cell.tc{background:rgba(37,99,235,0.05);}
 .cal-cell.sc{background:rgba(37,99,235,0.1);}
-.cal-cell.pc:not(.tc){opacity:.45;}
-.cal-dn{font-size:12px;color:var(--text3);margin-bottom:3px;display:inline-block;}
-.tc .cal-dn{background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-bottom:4px;}
+.cal-cell.pc:not(.tc){opacity:.6;}
+.cal-cell.pc.hasover{opacity:1;}
+.cal-dn{font-size:12px;color:var(--text2);display:inline-block;}
+.tc .cal-dn{background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
 .dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px;}
 .dot{width:6px;height:6px;border-radius:50%;}
 .dot-done{background:var(--green);}
@@ -592,14 +617,18 @@ body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;fon
       <div class="cal-ttl" id="calTitle"></div>
       <button class="cal-btn" onclick="calGo(1)">ถัดไป ›</button>
     </div>
+    <div class="cal-sum" id="calSum"></div>
     <div class="dlabels" id="dLabels"></div>
     <div class="cal-grid" id="calGrid"></div>
   </div>
-  <div style="display:flex;gap:16px;padding:10px 18px;flex-wrap:wrap;font-size:12px;color:var(--text3);">
-    <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#60a5fa;margin-right:4px;"></span>งาน</span>
-    <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--personal);margin-right:4px;"></span>ส่วนตัว</span>
-    <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:4px;"></span>ด่วน</span>
-    <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:4px;"></span>เสร็จ</span>
+  <div class="cal-legend">
+    <span><i style="background:var(--accent)"></i>ดำเนินการ</span>
+    <span><i style="background:var(--amber)"></i>รอผลตอบรับ</span>
+    <span><i style="background:#ea580c"></i>รอลายเซ็น</span>
+    <span><i style="background:var(--personal)"></i>ส่วนตัว</span>
+    <span><i style="background:var(--red)"></i>ด่วน/เลยกำหนด</span>
+    <span><i style="background:var(--green)"></i>เสร็จ</span>
+    <span><i style="background:var(--accent);opacity:.35;height:3px;vertical-align:2px"></i>แถบล่าง = งานต่อเนื่องที่คาบวันนั้น</span>
   </div>
   <div class="cal-det" id="calDet"><div class="cal-det-hd" id="calDetHd"></div><div id="calDetItems"></div></div>
 </div>
@@ -980,7 +1009,7 @@ function switchView(v){
   ['btnAll','btnWork','btnPersonal','addBtn'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display=v==='registry'?'none':'';});
   var qw=document.getElementById('quickWrap');if(qw)qw.style.display=v==='registry'?'none':'';
   var fp=document.getElementById('formPanel');if(fp)fp.style.display=v==='registry'?'none':'';
-  if(v==='cal')renderCal();
+  if(v==='cal'){var _t=today0();if(!calSel&&calY===_t.getFullYear()&&calM===_t.getMonth())selectCalDay(calDs(calY,calM,_t.getDate()));else renderCal();}
   if(v==='registry')loadRegistry(false);
 }
 function switchSpace(s){activeSpace=s;var btns={all:'btnAll',work:'btnWork',personal:'btnPersonal'};Object.keys(btns).forEach(function(k){var cl='vbtn'+(k==='personal'?' personal':'');document.getElementById(btns[k]).className=cl+(activeSpace===k?' on':'');});applyF();if(view==='cal')renderCal();}
@@ -1525,32 +1554,68 @@ async function moveStorageFiles(taskId, urls, srcFolder, destFolder){
 }
 
 // ════════ CALENDAR ════════
-function dotCls(t){if(t.status==='completed')return'dot-done';if(t.space==='personal'){if(isUrg(t.dueDate)||isOver(t.dueDate))return'dot-urg';return'dot-personal';}if(isUrg(t.dueDate)||isOver(t.dueDate))return'dot-urg';if(t.taskStatus==='รอลายเซ็น/อนุมัติ')return'dot-approv';if(t.taskStatus==='รอผลตอบรับ')return'dot-wait';return'dot-act';}
+function calKind(t){if(t.status==='completed')return'k-done';if(isUrg(t.dueDate)||isOver(t.dueDate))return'k-urg';if(t.space==='personal')return'k-personal';if(t.taskStatus==='รอลายเซ็น/อนุมัติ')return'k-approv';if(t.taskStatus==='รอผลตอบรับ')return'k-wait';return'';}
+function calInSpace(t){return activeSpace==='all'||(t.space||'work')===activeSpace;}
+function calDs(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+// งานที่ครบกำหนดวันนั้น vs งานต่อเนื่องที่คาบวันนั้น (เริ่มก่อน ครบทีหลัง)
+function calDue(ds){return tasks.filter(function(t){return t.dueDate===ds&&calInSpace(t);});}
+function calSpan(ds){return tasks.filter(function(t){return t.status!=='completed'&&t.startDate&&t.dueDate&&t.startDate<=ds&&ds<t.dueDate&&calInSpace(t);});}
+function calRank(t){return t.status==='completed'?3:(isOver(t.dueDate)||isUrg(t.dueDate))?0:t.taskStatus==='รอลายเซ็น/อนุมัติ'?1:2;}
 function renderCal(){
   document.getElementById('calTitle').textContent=TMONTHS[calM]+' '+(calY+543);
   var dl=document.getElementById('dLabels');dl.innerHTML='';DLABELS.forEach(function(l){var e=document.createElement('div');e.className='dlbl'+(l.w?' wk':'');e.textContent=l.t;dl.appendChild(e);});
   var g=document.getElementById('calGrid');g.innerHTML='';
   var dim=new Date(calY,calM+1,0).getDate(),dow=new Date(calY,calM,1).getDay(),offset=dow===0?6:dow-1,t0=today0();
+  var mFrom=calDs(calY,calM,1),mTo=calDs(calY,calM,dim);
+  var mDue=tasks.filter(function(t){return t.dueDate&&t.dueDate>=mFrom&&t.dueDate<=mTo&&calInSpace(t);});
+  var nDone=mDue.filter(function(t){return t.status==='completed';}).length;
+  var nOver=mDue.filter(function(t){return t.status!=='completed'&&isOver(t.dueDate);}).length;
+  document.getElementById('calSum').innerHTML='<div><b>'+mDue.length+'</b><span>ครบกำหนดเดือนนี้</span></div>'+
+    '<div class="s-done"><b>'+nDone+'</b><span>เสร็จแล้ว</span></div>'+
+    '<div><b>'+(mDue.length-nDone-nOver)+'</b><span>ยังต้องทำ</span></div>'+
+    '<div class="s-over"><b>'+nOver+'</b><span>เลยกำหนด ยังไม่เสร็จ</span></div>';
   for(var i=0;i<offset;i++){var ec=document.createElement('div');ec.className='cal-cell ec';g.appendChild(ec);}
   for(var d=1;d<=dim;d++){
-    var ds=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var ds=calDs(calY,calM,d);
     var dt=parseD(ds),isT=dt.getTime()===t0.getTime(),isPast=dt<t0,isSel=ds===calSel;
-    var dTasks=tasks.filter(function(t){var inR=t.dueDate===ds||(t.startDate&&t.startDate<=ds&&ds<=t.dueDate);if(!inR)return false;if(activeSpace==='all')return true;return(t.space||'work')===activeSpace;});
-    var cell=document.createElement('div');cell.className='cal-cell'+(isT?' tc':'')+(isSel?' sc':'')+(isPast&&!isT?' pc':'');
+    var due=calDue(ds).sort(function(a,b){return calRank(a)-calRank(b);}),span=calSpan(ds);
+    var open=due.filter(function(t){return t.status!=='completed';}).length;
+    var hasOver=isPast&&open>0;
+    var cell=document.createElement('div');cell.className='cal-cell'+(isT?' tc':'')+(isSel?' sc':'')+(isPast&&!isT?' pc':'')+(hasOver?' hasover':'');
     (function(s){cell.onclick=function(){selectCalDay(s);};})(ds);
-    var dn=document.createElement('div');dn.className='cal-dn';dn.textContent=d;cell.appendChild(dn);
-    if(dTasks.length){var dots=document.createElement('div');dots.className='dots';dTasks.slice(0,6).forEach(function(t){var dot=document.createElement('div');dot.className='dot '+dotCls(t);dots.appendChild(dot);});if(dTasks.length>6){var m=document.createElement('span');m.style.cssText='font-size:9px;color:var(--text3)';m.textContent='+'+(dTasks.length-6);dots.appendChild(m);}cell.appendChild(dots);}
+    var top=document.createElement('div');top.className='cal-top';
+    var dn=document.createElement('div');dn.className='cal-dn';dn.textContent=d;top.appendChild(dn);
+    if(open){var c=document.createElement('span');c.className='cal-cnt'+(hasOver?' over':'');c.textContent=open;c.title=open+' งานครบกำหนดที่ยังไม่เสร็จ';top.appendChild(c);}
+    cell.appendChild(top);
+    due.forEach(function(t){var ch=document.createElement('div');ch.className='cal-chip '+calKind(t);ch.textContent=t.title||'(ไม่มีชื่อ)';ch.title=(t.title||'')+(t.workGroup?' · '+t.workGroup:'');cell.appendChild(ch);});
+    if(span.length){
+      var bar=document.createElement('div');bar.className='cal-load';bar.title='งานต่อเนื่อง '+span.length+' งาน';bar.style.width=Math.min(100,span.length*20)+'%';cell.appendChild(bar);
+    }
     g.appendChild(cell);
   }
 }
+function fmtShort(s){var d=parseD(s);return d.getDate()+' '+TMONTHS[d.getMonth()].slice(0,3)+'.';}
+function calDetItem(t){
+  var item=document.createElement('div');item.className='det-item';
+  var tit=document.createElement('div');tit.className='det-title';tit.textContent=t.title||'';
+  var meta=document.createElement('div');meta.className='det-meta';
+  var rng=t.startDate&&t.startDate!==t.dueDate?' | '+fmtShort(t.startDate)+' → '+fmtShort(t.dueDate):'';
+  var late=t.status!=='completed'&&isOver(t.dueDate)?' <span class="bdg" style="background:rgba(248,113,113,.18);color:var(--red)">เลย '+Math.round((today0()-parseD(t.dueDate))/86400000)+' วัน</span>':'';
+  meta.innerHTML=esc(t.workGroup||'')+rng+' | '+statusB(t.taskStatus,t.status)+late;
+  var acts=document.createElement('div');acts.className='det-acts';
+  if(t.status!=='completed'){var be=document.createElement('button');be.className='act a-edit';be.textContent='✏️ แก้ไข';be.onclick=function(){editTask(t.id);switchView('list');};var bd=document.createElement('button');bd.className='act a-done';bd.textContent='✓ เสร็จ';bd.onclick=function(){toggleStatus(t.id);};acts.appendChild(be);acts.appendChild(bd);}
+  else{var bu=document.createElement('button');bu.className='act a-undo';bu.textContent='↩ เปิดใหม่';bu.onclick=function(){toggleStatus(t.id);};acts.appendChild(bu);}
+  item.appendChild(tit);item.appendChild(meta);item.appendChild(acts);return item;
+}
 function selectCalDay(ds){
   calSel=ds;renderCal();
-  var dTasks=tasks.filter(function(t){var inR=t.dueDate===ds||(t.startDate&&t.startDate<=ds&&ds<=t.dueDate);if(!inR)return false;if(activeSpace==='all')return true;return(t.space||'work')===activeSpace;});
+  var due=calDue(ds).sort(function(a,b){return calRank(a)-calRank(b);}),span=calSpan(ds);
   var d=parseD(ds);
-  document.getElementById('calDetHd').textContent='วัน'+TDAYS[d.getDay()]+'ที่ '+d.getDate()+' '+TMONTHS[d.getMonth()]+' พ.ศ.'+(d.getFullYear()+543)+' — '+dTasks.length+' ภารกิจ';
+  document.getElementById('calDetHd').textContent='วัน'+TDAYS[d.getDay()]+'ที่ '+d.getDate()+' '+TMONTHS[d.getMonth()]+' พ.ศ.'+(d.getFullYear()+543)+' — ครบกำหนด '+due.length+' · ต่อเนื่อง '+span.length;
   var tc=document.getElementById('calDetItems');tc.innerHTML='';
-  if(!dTasks.length){tc.innerHTML='<div class="no-cal">ไม่มีภารกิจในวันนี้</div>';document.getElementById('calDet').className='cal-det open';return;}
-  dTasks.forEach(function(t){var item=document.createElement('div');item.className='det-item';var tit=document.createElement('div');tit.className='det-title';tit.textContent=t.title||'';var meta=document.createElement('div');meta.className='det-meta';meta.innerHTML=(t.workGroup||'')+' | '+statusB(t.taskStatus,t.status);var acts=document.createElement('div');acts.className='det-acts';if(t.status!=='completed'){var be=document.createElement('button');be.className='act a-edit';be.textContent='✏️ แก้ไข';be.onclick=function(){editTask(t.id);switchView('list');};var bd=document.createElement('button');bd.className='act a-done';bd.textContent='✓ เสร็จ';bd.onclick=function(){toggleStatus(t.id);};acts.appendChild(be);acts.appendChild(bd);}else{var bu=document.createElement('button');bu.className='act a-undo';bu.textContent='↩ เปิดใหม่';bu.onclick=function(){toggleStatus(t.id);};acts.appendChild(bu);}item.appendChild(tit);item.appendChild(meta);item.appendChild(acts);tc.appendChild(item);});
+  if(!due.length&&!span.length){tc.innerHTML='<div class="no-cal">ไม่มีภารกิจในวันนี้</div>';}
+  if(due.length){var h=document.createElement('div');h.className='det-sec';h.textContent='📌 ครบกำหนดวันนี้';tc.appendChild(h);due.forEach(function(t){tc.appendChild(calDetItem(t));});}
+  if(span.length){var h2=document.createElement('div');h2.className='det-sec';h2.textContent='⋯ งานต่อเนื่องที่อยู่ในช่วงนี้';tc.appendChild(h2);span.sort(function(a,b){return a.dueDate<b.dueDate?-1:1;}).forEach(function(t){tc.appendChild(calDetItem(t));});}
   document.getElementById('calDet').className='cal-det open';
 }
 function calGo(d){calM+=d;if(calM>11){calM=0;calY++;}if(calM<0){calM=11;calY--;}calSel=null;document.getElementById('calDet').className='cal-det';renderCal();}
