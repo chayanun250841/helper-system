@@ -1248,6 +1248,10 @@ function mapLocalSaraban(local){
   return {doc:d,files:files,pages:local.pages||[]};
 }
 async function openSarabanDetail(value){
+  // งานที่ไม่ได้มาจากระบบสารบัญ (เช่น ln-… จากผู้ช่วยอ่านไลน์) → แสดงรายละเอียด/รูปของงานเอง ไม่ต้องไปหาหนังสือ
+  var rawId=String(value==null?'':value);
+  if(rawId&&rawId.indexOf('sb-')!==0&&!/^\d+$/.test(rawId)){openTaskDetailViewer(rawId);return;}
+  var eoBtn=document.getElementById('svEoffice');if(eoBtn)eoBtn.textContent='↗ เปิดใน e-Office';
   var id=sarabanId(value);if(!id){alert('ไม่พบรหัสหนังสือ');return;}
   var taskId=String(value||'').indexOf('sb-')===0?String(value):'sb-'+id;
   var task=(window.tasks||[]).find(function(x){return x.id===taskId;})||null;
@@ -1309,6 +1313,18 @@ function svPageImages(task){
   urls.forEach(function(u,i){var im=document.createElement('img');im.src=u;im.alt='หน้า '+(i+1);im.loading='lazy';im.title='กดเพื่อขยาย';im.onclick=function(){openLightbox(urls,i);};box.appendChild(im);});
   var info=c.querySelector('.sv-info');
   if(info&&info.nextSibling)c.insertBefore(box,info.nextSibling);else c.appendChild(box);
+}
+function openTaskDetailViewer(taskId){
+  var t=(window.tasks||[]).find(function(x){return x.id===taskId;});
+  var modal=document.getElementById('sarabanViewer'),title=document.getElementById('svTitle'),meta=document.getElementById('svMeta'),content=document.getElementById('svContent'),eo=document.getElementById('svEoffice');
+  modal.className='sv-bg open';document.body.style.overflow='hidden';content.className='';
+  if(!t){title.textContent='ไม่พบงานนี้';meta.textContent=taskId;content.className='sv-status';content.innerHTML='⚠️ ไม่พบงานในรายการ ลองรีเฟรชหน้า';eo.style.display='none';return;}
+  var src=taskId.indexOf('ln-')===0?'จากไลน์':'งาน';
+  title.textContent=t.title||'(ไม่มีชื่องาน)';
+  meta.textContent=src+(t.startDate?' · '+t.startDate:'');
+  if(t.fileLink){eo.href=t.fileLink;eo.textContent='📎 เปิดไฟล์แนบ';eo.style.display='inline-flex';}else eo.style.display='none';
+  content.innerHTML='<div class="sv-info"><div class="sv-kv">กลุ่มงาน<b>'+esc(t.workGroup||'-')+'</b></div><div class="sv-kv">กำหนด<b>'+esc(t.dueDate||'ไม่ระบุ')+'</b></div><div class="sv-kv">ความสำคัญ<b>'+esc(t.priority==='high'?'ด่วน':t.priority==='low'?'ต่ำ':'กลาง')+'</b></div><div class="sv-kv">ที่มา<b>'+esc(src)+'</b></div>'+(t.details?'<div class="sv-summary"><b style="color:var(--text)">รายละเอียด</b>\n'+esc(t.details)+'</div>':'')+'</div>';
+  svPageImages(t);
 }
 function regOpen(id){
   openSarabanDetail(id);
@@ -1978,7 +1994,7 @@ function isSupaConfigured(){
     items.sort(function(a,c){ return (c.startDate||'').localeCompare(a.startDate||''); });
 
     var h = '<div class="ib-hd" onclick="sbToggleInbox()">'
-      + '<span class="ib-ttl">📥 งานใหม่จากระบบสารบัญ</span>'
+      + '<span class="ib-ttl">📥 งานใหม่ (สารบัญ + ไลน์)</span>'
       + '<span class="ib-n">' + items.length + '</span>'
       + '<span class="ib-sub">รอคุณยืนยันก่อนเข้าเป็นภารกิจจริง</span>'
       + '<button class="saraban-pull-btn" data-default-label="📥 ดึงงานใหม่" type="button" onclick="event.stopPropagation();regPullNow()">📥 ดึงงานใหม่</button>'
@@ -2001,7 +2017,7 @@ function isSupaConfigured(){
           + '<div class="ib-b">'
           + '<button class="ib-ok" onclick="event.stopPropagation();sbConfirm(\'' + t.id + '\')">✓ ยืนยัน เพิ่มเป็นภารกิจ</button>'
           + '<button class="ib-no" onclick="event.stopPropagation();sbReject(\'' + t.id + '\')">✕ ไม่เกี่ยวกับผม</button>'
-          + '<button class="ib-lk" type="button" onclick="event.stopPropagation();openSarabanDetail(\'' + t.id + '\')">🔎 ดูรายละเอียด / อ่านหนังสือต้นฉบับ</button>'
+          + '<button class="ib-lk" type="button" onclick="event.stopPropagation();openSarabanDetail(\'' + t.id + '\')">' + (String(t.id).indexOf('sb-')===0 ? '🔎 ดูรายละเอียด / อ่านหนังสือต้นฉบับ' : '🔎 ดูรายละเอียด / รูปแนบ') + '</button>'
           + '</div></li>';
       });
       h += '</ul>';
